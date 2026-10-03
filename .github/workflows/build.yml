@@ -35,6 +35,12 @@ jobs:
     steps:
       - name: 检出仓库
         uses: actions/checkout@v4
+        with:
+          # ⚠️ 必须是完整历史（默认是 fetch-depth: 1 的浅克隆）。
+          # 为什么：这一步之后要提交并推送产物。浅克隆里做 rebase/推送很容易因为
+          # "shallow update not allowed" 之类的原因失败；实测踩过一次推送被拒
+          # 导致整步变红（产物其实已经生成好了）。仓库很小，取全量不心疼。
+          fetch-depth: 0
 
       - name: 安装 Python
         uses: actions/setup-python@v5
@@ -120,14 +126,40 @@ jobs:
           # 不加 -f 的话 `git add -A` 会尊重 .gitignore、永不提交它们，
           # jsDelivr 上就永远没有 config.json，App 直接读不到配置。
           git add -f config.json status.json report.html
-          # 其余改动照常（主要是 filter.json 的 failure_streak 回写）
+          # 其余改动照常（脚本不再写 filter.json 了，这里主要是防手工编辑没提交）
           git add -A
           if git diff --cached --quiet; then
             echo "::notice::内容没有变化，跳过提交"
           else
             git commit -m "chore: 更新快照 $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
-            git push origin main
-            echo "::notice::已提交并推送"
+
+            # ⚠️ 推送前必须先跟上远端。
+            # 实测踩过（2026-10-03）：这轮跑的中途有人在 25 秒内又推了一个提交，
+            # 本作业检出的是旧 HEAD，直接 `git push` 被拒（non-fast-forward），
+            # 整步变红 —— 而产物其实已经生成好了，白白失败一次。
+            # 这里改成：先 fetch+rebase 再推，失败重试 3 次（退避递增）。
+            pushed=0
+            for attempt in 1 2 3; do
+              git fetch origin main
+              if ! git rebase FETCH_HEAD; then
+                # rebase 冲突一般意味着产物文件被别处改了：宁可放弃本次提交，
+                # 也不能把仓库搞进冲突状态（下一次运行会重新生成产物）。
+                git rebase --abort 2>/dev/null || true
+                echo "::warning::rebase 冲突，本次放弃提交（产物仍是本次生成的，下一轮会重来）"
+                break
+              fi
+              if git push origin main; then
+                pushed=1
+                echo "::notice::已提交并推送"
+                break
+              fi
+              echo "⚠️ 第 ${attempt} 次推送失败（远端可能又前进），等 $((attempt * 5)) 秒重试"
+              sleep $((attempt * 5))
+            done
+            if [ "${pushed}" -ne 1 ]; then
+              echo "::error::产物已生成但未能推送（远端持续前进或权限问题）。jsDelivr 上仍是上一版配置，不影响可用性。"
+              exit 1
+            fi
           fi
 
       # ────────────────────────────────────────────────────────────────
