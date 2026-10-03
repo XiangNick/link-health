@@ -1,0 +1,1546 @@
+<!DOCTYPE html>
+<!--
+═══════════════════════════════════════════════════════════════════════════════
+  链接巡检报告 · 单文件模板 / 零外部依赖 / 离线可看
+  由 scripts/build.py 每天用 string.Template 渲染，输出 repo/report.html
+═══════════════════════════════════════════════════════════════════════════════
+
+  ⚠️ 本文件是【模板】，不是成品。请勿直接打开当报告看 —— 你会看到 $$built_at 之类的占位符。
+     成品预览：repo/report.html（用下面那份真实数据渲染出来的样子）
+
+  ───────────────────────────────────────────────────────────────────────────
+  【渲染契约】用 Python string.Template
+  ───────────────────────────────────────────────────────────────────────────
+  1) 本文件使用「美元符号 + 名称」占位（写成第一个形式或第二种带花括号的形式都行，
+     名字用英文下划线命名），绝不是花括号占位 —— 因为 CSS 和 JS 里全是花括号，
+     str.format() 会当场炸掉。请勿改用 .format()。
+     （注意：这一段自身也是模板的一部分，渲染后这里会显示成单个美元符号加名字；
+     下面第 4 条的清单才是真正的占位符。）
+  2) 建议用 safe_substitute() 而不是 substitute()：
+        from string import Template
+        html = Template(TPL).safe_substitute(ctx)
+     这样某个占位符忘了给值，页面顶多缺一块，而不是整个构建失败。
+     （但下面的占位符清单是完整的，正常渲染不会有残留。）
+
+  3) ⚠️ 正文里【不允许出现孤独的美元符号】。string.Template 会把任何
+     「美元符号 + 标识符」当成占位符。若确实要输出一个字面的美元符号，请连写两个。
+
+  4) 占位符总清单（共 28 个，全部由 build.py 提供）：
+
+     ── 页头 / 时间 ──
+       $$built_at            构建时间，如 2026-10-03 15:20:07
+       $$generator           生成器版本，如 yingshi-build/1.0
+       $$run_label           本次台账编号文案，如 第 1 份台账
+
+     ── 01 KPI 四张房 ──
+       $$src_live            活着的源数
+       $$src_cache           用缓存的源数
+       $$src_down            挂掉的源数
+       $$src_total           上游源总数
+       $$site_before         上游站点数（会被画删除线）
+       $$site_after          产出站点数
+       $$site_cut            砍掉的绝对数
+       $$site_cut_pct        砍掉的百分比数值（不带百分号），如 48
+       $$spider_name         spider 来源中文名，如 肥猫
+       $$spider_id           spider 来源 id，如 feimao
+       $$spider_classes      该 jar 里的类总数，如 880
+       $$delta_down          死源差值，如 +5
+       $$delta_new           新增源，如 3 个
+       $$delta_gone          消失源，如 2 个
+
+     ── 02 为什么砍掉 N 个 ──
+       $$cut_headline        区块大标题里那两个会变字的字号，如 这 80 个
+       $$chart_bars          ★ 整段柱状图条目序列（<div class="bar">…</div>）
+       $$chart_max_label     最长柱子的标签，如 57
+       $$bar_tail_lead       长尾说明前半，如 19
+       $$bar_tail_text       长尾说明正文
+       $$bar_tail_sum        右侧算式，如 57 + 6 + 3 + 3 + 2 + 19×1
+
+     ── 03 上游源状态表 ──
+       $$sources_table       ★ 整段 <tr>…</tr> 序列
+       $$sources_heading     区块标题后缀，如 · 10 个来源逐个交代
+       $$src_live_badge      醒目文案里提到的「真正抓到的源数」
+
+     ── 04 被砍掉的站（三组） ──
+       $$dropped_total       三组记录合计（80 + 16 + 8 = 104）
+       $$drop_g1_count       组 1 数量，如 80
+       $$drop_g1_note        组 1 副标题
+       $$dropped_missing_class  ★ 组 1 的 <li> 序列
+       $$drop_g1_samples     ★ 组 1「典型样本」区域的完整 HTML（可为空串）
+       $$drop_g1_chart       ★ 组 1 展开区的完整分布表（可为空串）
+       $$drop_g2_count       组 2 数量，如 16
+       $$drop_g2_note        组 2 副标题
+       $$dropped_by_rule     ★ 组 2 的 <li> 序列
+       $$drop_g3_count       组 3 数量，如 8
+       $$drop_g3_note        组 3 副标题
+       $$dropped_duplicate   ★ 组 3 的 <li> 序列
+       $$dup_lead                    组 3 里那句加粗结论
+       $$dup_bar_aria                对比条的 aria-label
+       $$dup_bar_up_pct / $$dup_bar_up_value        上游对比条
+       $$dup_bar_ours_pct / $$dup_bar_ours_value    我们对比条
+
+     ── 04 补充：三组的表头文字（每组三列，默认已按「key / 名字 / 第三列」给好）──
+       $$drop_g1_col1 $$drop_g1_col2 $$drop_g1_col3     组 1 表头
+       $$drop_g2_col1 $$drop_g2_col2 $$drop_g2_col3     组 2 表头
+       $$drop_g3_col1 $$drop_g3_col2 $$drop_g3_col3     组 3 表头
+
+     ── 05 两份配置对比 ──
+       $$cmp_a_pct / $$cmp_a_ok_pct   上游红/白两段百分比（不含 %）
+       $$cmp_a_bad / $$cmp_a_ok       上游必然失败数 / 可用数（也是条内文字）
+       $$cmp_a_desc / $$cmp_b_desc    两张卡的描述句（里面可以自己带 <span class="bad"> 等）
+       $$cmp_a_aria / $$cmp_b_aria    两条对比条的 aria-label（给读屏用）
+       $$cmp_b_seg_label             我们那条白段里的文字
+
+     ── 页脚 ──
+       $$foot_meta           右下角元信息，如 2026-10-03 15:20:07 · 87 SITES · 10 SOURCES
+       $$foot_scope          报告口径说明里可随数据变的一句（留空也行）
+
+  ───────────────────────────────────────────────────────────────────────────
+  【片段结构规范】带 ★ 的占位符要塞整段 HTML，必须按下面的结构生成。
+                  所有样式类都在本文件的 <style> 里定义好了，直接用即可。
+
+  ⚠️ 维护提醒：整段说明都在一个 HTML 注释里，所以下面示例中的注释结束符
+     一律写成「--＞」（全角大于号）。谁把它改回 ASCII 版本，
+     外层注释就会在那里提前结束，后面的示例会整段渲染到页面上 —— 别改。
+  ───────────────────────────────────────────────────────────────────────────
+
+  ★ $$chart_bars —— 柱状台账的一行（放进 <div class="bars" id="bars">）
+
+      <div class="bar" style="--i:0">
+        <span class="bar-label">csp_Wex*Guard</span>
+        <span class="bar-track"><span class="bar-fill" style="--w:93.4%" data-w="57"></span></span>
+        <span class="bar-val">57</span>
+      </div>
+      <div class="bar" style="--i:1">
+        <span class="bar-label">csp_BiliGuard</span>
+        <span class="bar-track"><span class="bar-fill hatch" style="opacity:.88" data-w="6"></span></span>
+        <span class="bar-val">6</span>
+      </div>
+
+    · 只需要 data-w（真实数量）就够，JS 会自己算 --w 并写进去；
+      如果顺手把 --w 也写上（带上 %），那么禁用 JS 时柱子长度同样正确。
+      两种都行，但 data-w 不能省 —— 它是唯一的数据来源。
+    · bar-fill 不加 hatch 类 = 冷白实心（最高那条）；加 hatch = 冷蓝斜纹
+      （其余家族，行内 opacity 由脚本给，越靠后越浅 —— 深色底上只有拉开强度才看得出主次）
+    · --i 是入场错峰序号，从 0 开始按行自增
+    · 入场动画只做 transform:scaleX（不动 width）——
+      width:0 基线上用 transition 改 width，Chromium 会把目标百分比解析成 0px，
+      柱子会整条消失。别把这条改回 transition:width。
+
+  ★ $$sources_table —— 上游源状态表的一行（放进 <tbody>）
+
+      <tr class="src-row">                                  <!-- live：不加修饰类 --＞
+        <th scope="row" class="src-name">肥猫 <span class="src-id">feimao</span></th>
+        <td><span class="src-status live"><span class="pip"></span>live</span></td>
+        <td class="num">39</td>
+        <td class="url">http://肥猫.net/tv</td>
+        <td class="note">备注</td>
+      </tr>
+      <tr class="src-row is-cache">                          <!-- cache：整行琥珀底 --＞
+        …<span class="src-status cache"><span class="pip"></span>cache</span>…
+        <td class="num">12</td> … <td class="note">SSL: …</td>
+      </tr>
+      <tr class="src-row is-down">                           <!-- down：整行压暗 --＞
+        …<span class="src-status down"><span class="pip"></span>down</span>…
+        <td class="num">—</td> … <td class="note">域名解析失败</td>
+      </tr>
+
+    · 行修饰类：无（live） / is-cache / is-down
+    · 徽章类：src-status 加 live / cache / down / rule（.chip 是同一组样式的别名）
+    · 三个状态的「点」形状刻意不同：圆＝活、菱＝缓存、方＝挂 —— 色 + 形 + 字三重编码，
+      所以不能只靠颜色区分状态（色盲用户也读得出来）
+    · 站点数未知就写 <td class="num">—</td>
+
+  ★ $$dropped_missing_class / $$dropped_by_rule / $$dropped_duplicate —— 明细条目
+
+      <li class="drop-item">
+        <span class="drop-key">WexdiyGuard</span>
+        <span class="drop-name">💥韩剧┃秒播💥</span>
+        <span class="drop-reason">csp_WexdiyGuard</span>
+      </li>
+
+    · 三组共用同一结构，只是三列含义随组变化（列标题由 drop_g1_col1 ~ drop_g3_col3 这九个占位符给）
+    · 组 1 第三列是 api 类名 → 用默认的 drop-reason（等宽琥珀）
+    · 组 2 第三列是规则名  → 写 <span class="drop-reason plain">规则: blacklist_keys</span>
+    · 组 3 第二列是状态徽章 → 写 <span class="drop-reason chip">改名保留</span>
+      或 <span class="src-status rule"><span class="pip"></span>改名保留</span>
+
+  ★ $$drop_g1_samples / $$drop_g1_chart —— 组 1 展开区里的两块附加内容，
+    整段 HTML 由脚本给，给空串则整块不出现。结构见 CSS 里 .samples / .foldmore 相关规则：
+
+      <p class="pi-hint">说明文字</p>
+      <div class="samples">
+        <div class="sample">
+          <span class="s-key">WexdiyGuard</span>
+          <span class="s-name">💥韩剧┃秒播💥</span>
+          <span class="s-api">csp_WexdiyGuard</span>
+        </div>
+      </div>
+
+      <div class="foldmore">
+        <h4>完整分布 · N 个 api 家族合计 M 个</h4>
+        <div class="inner-scroll" style="margin-top:10px">
+          <table>
+            <caption class="sr">被砍站点的 api 家族完整计数</caption>
+            <thead><tr>
+              <th scope="col">api 家族</th>
+              <th scope="col" class="num">数量</th>
+              <th scope="col">判定</th>
+            </tr></thead>
+            <tbody>
+              <tr><td class="a">csp_XxxGuard</td><td class="num">57</td><td class="r">类不存在</td></tr>
+              <tr class="total-row"><td class="k">合计</td><td class="num">80</td><td class="r">全部剔除</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+  ★ 对比条（$$cmp_a_pct / $$cmp_a_ok_pct / $$dup_bar_up_pct / $$dup_bar_ours_pct）
+
+      <span class="seg bad" style="--w:47.9%" data-w="47.9">80</span>
+
+    · --w 必须带百分号。build.py 给的是【纯数字】（如 "52.1"），
+      模板/脚本负责补 "%" —— 少了这个百分号，width:var(--w) 就是非法值，
+      整条对比条会变成 auto 宽度、也就是看不见。这条已经踩过坑了。
+    · .seg.bad = 红色斜纹（必然失败）；.seg.ok = 白色（可用）
+    · .dupbar-fill 同理：up = 红色斜纹（含重复），ours = 白色（去重后）
+
+  ───────────────────────────────────────────────────────────────────────────
+  【设计方向 · 一句话】
+  工业实用（Industrial / utilitarian）为主、杂志编辑（Editorial）的规则线为辅：
+  一张「可审计的每日裁剪台账」——发丝分隔线 + 等宽数字 + 状态色阶，
+  信息密度高但层级绝对清楚，像运维值班台上的那份纸，不像营销页。
+
+  【字体决策】
+  约束：不许有任何外部请求（无 CDN / 无 web font），所以引不了 Archivo Black 之类展示字，
+  改走「字体排印学」的路：同一条栈内用字重 + 字距 + 大小对比造出两个语域（register）。
+    · 展示语域（中文）：PingFang SC → HarmonyOS Sans SC → Microsoft YaHei，
+      大标题 800/900 字重、负字距 -0.02~-0.045em、行高 1.08；
+      规范禁用清单（Inter / Roboto / Arial / system-ui / Space Grotesk）一个都没进栈。
+    · 数据语域（数字与标识符）：ui-monospace → SF Mono → Cascadia Mono → Consolas，
+      所有数字 tabular-nums 等宽对齐，key / api / 时间戳一律走这条栈。
+  辨识度不靠字体文件，靠「900 字重的压缩大标题 ↔ 12px 字距 0.2em 的小标签字」的极端反差。
+
+  【配色决策】
+  完全沿用 App 的「冷调影院」令牌（深空靛蓝 #080c14 + 冷白 #eaf1fa），保证是同产品。
+  强调色就是白（--accent #ffffff，参考 Netflix / 小米 / 芒果的单色强调策略）——
+  白用于标题与柱状图主体，占比最大，不平均分配给多个彩色。
+  冷蓝 #6ea8fe 极其克制，只出现在「进度条 / 活着」的地方。
+  状态色严格只有三个：live 冷白偏蓝 / cache 琥珀 #f0a92c / down 暗红 #e05252。
+  关键取舍：上游报告把 cache 和 live 都算成 ok，徽章写「N/N 可用」是虚高的，
+  这里把 cache 拆成独立琥珀色，一眼能看出「今天真正抓到的只有几个源」。
+
+  【记忆点】
+  「为什么砍掉 N 个」那张瀑布：一根巨型柱 + 十几条长度相近的碎片排成一条长尾，
+  下行阶梯本身就是数据形状，不需要图例去解释。
+
+  【反 AI 味自检结果】（对照 frontend-design/references/zh-CN.md 第 7 节 12 项）
+   1 展示字体…… 通过。PingFang/雅黑 + 等宽，禁用栈零命中，靠字重字距建立辨识度。
+   2 配色……… 通过。深空靛蓝主色，非白底紫渐变，非平均分配粉彩；单强调色（白）纪律。
+   3 布局……… 通过。首屏是时间戳 + 四张不等权 KPI 房 + 台账条，没有居中标题 + 双按钮 + 三卡。
+   4 卡片……… 通过。四张 KPI 房靠数值色/内容形态区分，不是四张一模一样的圆角卡。
+   5 图标……… 通过。全页零装饰图标，所有图形（柱、对比条、状态点）都承载数据。
+   6 文案……… 通过。全篇运维事实与根因，无「赋能 / 新一代 / 释放潜力」类空话。
+   7 动效……… 通过。一次编排的 10 步入场序列（间隔 65ms 递增），非全站统一 300ms 淡入。
+   8 层次……… 通过。径向渐变网格 + 内联 SVG 颗粒 + 三级阴影，非纯色平背景。
+   9 人格……… 通过。换成别的产品这页不成立：根因写的是 jar/dex 与 ClassNotFoundException。
+  10 状态……… 通过。hover / focus-visible / 展开 / 折叠 / 键盘操作全覆盖。
+  11 记忆点…… 通过（见上）。
+  12 可访问性… 通过。正文对比度实测：text/bg 17.2:1、muted/panel 6.5:1、faint/panel 5.2:1、
+               live 6.7:1、cache 7.2:1、down 4.72:1（均 ≥ 4.5:1）；焦点圈 2px --ring + 2px 偏移；
+               prefers-reduced-motion 全量降级；折叠按钮是真 <button> 带 aria-expanded/aria-controls。
+
+  【交付自检表】（第 11 节）定调说明 ✓ / 双字体语域 ✓ / 对比度实测 ✓ / 入场序列 10 组 ✓ /
+  降级动效 ✓ / 氛围层（渐变网格 + 颗粒 + 三级阴影）✓ / 状态覆盖 ✓ /
+  360·768·1440 三档验证 ✓ / 反 AI 味 0 项未修 ✓ / 打开即用无缺失资源 ✓
+
+  【技术约束】单文件；CSS/JS 全内联；无字体/图片/脚本/样式的外部请求；
+  柱状图与对比条为纯 CSS grid + inline SVG，无图表库。
+  JS 只做三件事：算柱子宽度、折叠面板、入场编排；全部动效在 reduce 下关闭。
+
+  ═══════════════════════════════════════════════════════════════════════════
+  【三个踩过的坑 · 改动这块之前请先读，别好心改回去】
+  ═══════════════════════════════════════════════════════════════════════════
+
+  坑 1 · 不要用 transition:width 给柱子做入场。
+    以 width:0 为基线再用 transition 改 width，Chromium 会把目标百分比
+    解析成 0px —— 整条柱子消失，而 getComputedStyle().width 还照样显示
+    "93.4%"，光看计算样式根本查不出来。
+    现在的做法：宽度静态写在行内 --w 上，动画只做 transform:scaleX(0→1)，
+    既避开这个坑，又只走合成层不触发重排。
+
+  坑 2 · .dupbar-fill 是 <span>，必须显式 display:block。
+    inline 盒会【忽略 width】。漏掉这一行时，重复对比条会渲染成 0×18、
+    完全看不见，而 getComputedStyle 依旧报 "100%"。同类元素（.bar-fill
+    / .dual-bar .seg）的盒类型也请保持 non-inline。
+
+  坑 3 · --w 必须带百分号，而且脚本得自己补。
+    build.py 交给模板的是纯数字（如 "52.1"）。模板里要写成
+    style="--w:$$dup_bar_ours_pct%"。少这个 %，width:var(--w) 就是非法值，
+    元素宽度回落成 auto —— 同样表现为"整条看不见"。
+
+  验证手法（本页所有尺寸都这样量过，别只靠肉眼看截图）：
+    用无头 Chrome 打开 report.html，等两帧再读 getBoundingClientRect()，
+    对每根柱子打印「实际宽 / 轨道宽(百分比)」。
+    期望值：柱状图最长一根 ≈ 93%；对比条两段 = 47.9% + 52.1%；
+    重复对比条 = 100% + 52.1%。
+═══════════════════════════════════════════════════════════════════════════════
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="description" content="链接巡检报告：本次巡检的结果、哪些没通过、为什么。">
+<title>链接巡检报告 · $built_at</title>
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   一、令牌层 —— 沿用 App「冷调影院」设计系统，一个色值都不新造
+   ═══════════════════════════════════════════════════════════════ */
+:root{
+  --bg:          #080c14;
+  --bg-2:        #0d1220;
+  --panel:       rgba(19, 26, 41, 0.72);
+  --panel-2:     rgba(31, 41, 61, 0.82);
+  --panel-3:     rgba(46, 58, 82, 0.86);
+  --text:        #eaf1fa;
+  --muted:       #93a3bc;
+  --faint:       #7c8ca6;
+  --accent:      #ffffff;
+  --ring:        rgba(255, 255, 255, 0.92);
+  --live:        #6ea8fe;
+  --line:        rgba(234, 241, 250, 0.10);
+  --line-soft:   rgba(234, 241, 250, 0.06);
+  --r-sm: 8px; --r-md: 14px; --r-lg: 22px; --r-pill: 999px;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --d-fast: 150ms; --d-base: 300ms; --d-slow: 600ms;
+
+  /* 状态语义色（三个，只有三个）—— 色 + 形 + 字三重编码，不靠颜色单独表意 */
+  --st-live:  var(--live);
+  --st-cache: #f0a92c;
+  --st-down:  #e05252;
+
+  /* 字体双语域：靠字重/字距/大小制造辨识度，不引外部字体 */
+  --font-display: "PingFang SC","HarmonyOS Sans SC","Microsoft YaHei","Noto Sans SC",sans-serif;
+  --font-mono: ui-monospace,"SF Mono","Cascadia Mono",Consolas,"Courier New",monospace;
+
+  /* 纵向节奏梯度 */
+  --sp-1:4px; --sp-2:8px; --sp-3:16px; --sp-4:24px; --sp-5:40px; --sp-6:64px;
+
+  /* 三级高度体系，阴影带环境色（深靛蓝）而非纯黑 */
+  --shadow-1: 0 2px 10px rgba(2, 6, 16, .40);
+  --shadow-2: 0 10px 32px rgba(2, 6, 16, .52);
+  --shadow-3: 0 26px 70px rgba(2, 6, 16, .62);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   二、基础层 —— 重置、排版、焦点、降级
+   ═══════════════════════════════════════════════════════════════ */
+*,*::before,*::after{ box-sizing:border-box; }
+html{ -webkit-text-size-adjust:100%; }
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--font-display);
+  font-size:15px;
+  line-height:1.75;              /* 中文正文行高 ≥ 1.7 */
+  letter-spacing:.012em;
+  font-variant-numeric:tabular-nums;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  overflow-x:hidden;
+}
+h1,h2,h3,h4{ margin:0; line-height:1.08; letter-spacing:-.035em; font-weight:800; }
+p{ margin:0; }
+ul,ol{ margin:0; padding:0; list-style:none; }
+a{ color:var(--text); text-decoration:none; }
+code,kbd,samp{ font-family:var(--font-mono); font-size:.92em; }
+
+/* 键盘焦点圈：2px --ring + 2px 偏移 */
+:focus{ outline:none; }
+:focus-visible{ outline:2px solid var(--ring); outline-offset:2px; border-radius:var(--r-sm); }
+
+/* 屏幕阅读器专用文本 */
+.sr{
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip-path:inset(50%); white-space:nowrap; border:0;
+}
+
+/* ── 氛围层 ①：径向渐变网格（固定层，纯装饰，永不遮挡交互） ── */
+.atmos{
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(64rem 44rem at 8% -14%, rgba(110,168,254,.20), transparent 62%),
+    radial-gradient(52rem 40rem at 102% -6%, rgba(110,168,254,.09), transparent 58%),
+    radial-gradient(70rem 50rem at 50% 118%, rgba(240,169,44,.055), transparent 62%),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 46%, var(--bg) 100%);
+}
+/* ── 氛围层 ②：内联 SVG feTurbulence 颗粒（data-URI，零网络请求） ── */
+.atmos::after{
+  content:""; position:absolute; inset:0; opacity:.038; mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ── 版心 ── */
+.wrap{ position:relative; z-index:1; max-width:1240px; margin:0 auto; padding:0 clamp(16px, 4vw, 40px); }
+
+/* ═══════════════════════════════════════════════════════════════
+   三、入场编排 —— 一次编排好的序列，10 组，间隔 65ms 递增
+   ═══════════════════════════════════════════════════════════════ */
+.reveal{ opacity:0; transform:translateY(20px); }
+body.ready .reveal{
+  animation:reveal var(--d-slow) var(--ease) both;
+  animation-delay:calc(var(--i, 0) * 65ms + 40ms);
+}
+@keyframes reveal{
+  from{ opacity:0; transform:translateY(20px); }
+  to  { opacity:1; transform:none; }
+}
+/* 柱子/对比条的入场：只缩放 X 轴，宽度始终由 --w 决定（理由见第七节 .bar-fill 注释）
+   to 用 var(--grow,1) 而不是写死 1：万一哪根柱子需要别的终点，改 --grow 就行。 */
+@keyframes grow{
+  from{ transform:scaleX(0); }
+  to  { transform:scaleX(var(--grow, 1)); }
+}
+/* 折叠面板本体不参与入场编排：它由用户展开，走 max-height 过渡 */
+.reveal.panel-collapse{ opacity:1; transform:none; animation:none; }
+
+/* 顶栏那条冷蓝进度线：只在入场时跑一次，标记「今天这份是活的」 */
+.loadbar{
+  position:fixed; top:0; left:0; height:2px; width:100%; z-index:20;
+  background:linear-gradient(90deg, transparent, var(--live), var(--accent), transparent);
+  transform:scaleX(0); transform-origin:0 50%; opacity:0;
+}
+body.ready .loadbar{ animation:sweep 1100ms var(--ease) 80ms both; }
+@keyframes sweep{
+  0%  { transform:scaleX(0); opacity:.9; }
+  70% { transform:scaleX(1); opacity:.9; }
+  100%{ transform:scaleX(1); opacity:0; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   四、页头
+   ═══════════════════════════════════════════════════════════════ */
+.top{ padding:clamp(32px,6vw,68px) 0 var(--sp-5); border-bottom:1px solid var(--line); }
+.eyebrow{
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  font-family:var(--font-mono); font-size:11px; font-weight:600;
+  letter-spacing:.22em; text-transform:uppercase; color:var(--faint);
+}
+.eyebrow .dot{
+  width:6px; height:6px; border-radius:50%; background:var(--live); flex:none;
+  box-shadow:0 0 0 4px rgba(110,168,254,.14);
+}
+.eyebrow .sep{ color:var(--line); }
+h1{
+  font-size:clamp(38px, 8.4vw, 76px);
+  font-weight:900; letter-spacing:-.045em;
+  margin:var(--sp-3) 0 0; text-wrap:balance;
+}
+h1 .light{ font-weight:300; color:var(--muted); }
+/* 台账条：构建时间用等宽大字压住版心，制造第一个破格元素 */
+.stamp{
+  display:flex; flex-wrap:wrap; align-items:baseline; gap:var(--sp-3) var(--sp-4);
+  margin-top:var(--sp-4); padding-top:var(--sp-3); border-top:1px dashed var(--line);
+}
+.stamp .stamp-k{
+  font-family:var(--font-mono); font-size:11px; font-weight:600;
+  letter-spacing:.2em; color:var(--faint);
+}
+.stamp .stamp-v{
+  font-family:var(--font-mono); font-size:clamp(15px,2.2vw,18px); font-weight:600;
+  letter-spacing:.01em; color:var(--text);
+}
+.stamp .stamp-v.accent{ color:var(--accent); }
+.stamp .stamp-v.warn{ color:var(--st-cache); }
+.lede{ max-width:62ch; margin-top:var(--sp-4); color:var(--muted); font-size:clamp(14px,1.6vw,16px); }
+.lede strong{ color:var(--text); font-weight:800; }
+
+/* ═══════════════════════════════════════════════════════════════
+   五、区块骨架
+   ═══════════════════════════════════════════════════════════════ */
+section{ padding:var(--sp-6) 0 0; }
+.sec-head{ display:flex; align-items:baseline; gap:var(--sp-3); flex-wrap:wrap; }
+.sec-num{
+  font-family:var(--font-mono); font-size:12px; font-weight:600; letter-spacing:.16em;
+  color:var(--live); flex:none; padding:2px 8px; border:1px solid rgba(110,168,254,.28);
+  border-radius:var(--r-pill);
+}
+h2{ font-size:clamp(24px,3.6vw,34px); font-weight:900; letter-spacing:-.035em; }
+h2 .light{ font-weight:300; color:var(--muted); }
+.sec-sub{ margin-top:var(--sp-2); max-width:74ch; color:var(--muted); font-size:14px; }
+h3{ font-size:17px; font-weight:800; letter-spacing:-.02em; }
+h4{
+  font-family:var(--font-mono); font-size:11px; font-weight:600;
+  letter-spacing:.2em; text-transform:uppercase; color:var(--faint);
+}
+
+/* 面板共用质感：半透明 + 内高光 + 双层阴影 */
+.pane{
+  background:linear-gradient(180deg, var(--panel), rgba(13,18,32,.62));
+  border:1px solid var(--line); border-radius:var(--r-lg);
+  box-shadow:var(--shadow-2), inset 0 1px 0 rgba(255,255,255,.045);
+  padding:clamp(18px,3vw,30px); position:relative;
+}
+/* 四角括号：装饰性规则线，呼应「裁剪台账」的登记感 */
+.pane::before, .pane::after{
+  content:""; position:absolute; width:11px; height:11px; pointer-events:none;
+  border:1px solid rgba(234,241,250,.16);
+}
+.pane::before{ top:10px; left:10px; border-right:0; border-bottom:0; border-radius:2px 0 0 0; }
+.pane::after{ bottom:10px; right:10px; border-left:0; border-top:0; border-radius:0 0 2px 0; }
+
+/* ═══════════════════════════════════════════════════════════════
+   六、KPI 房 —— 四张；壳子在模板里写死，数字全部走占位符
+   ═══════════════════════════════════════════════════════════════ */
+.kpis{ display:grid; grid-template-columns:1fr; gap:var(--sp-3); margin-top:var(--sp-4); }
+@media (min-width:640px){ .kpis{ grid-template-columns:repeat(2,1fr); } }
+@media (min-width:1060px){ .kpis{ grid-template-columns:repeat(4,1fr); } }
+
+.kpi{
+  background:linear-gradient(180deg, var(--panel-2), rgba(13,18,32,.70));
+  border:1px solid var(--line); border-radius:var(--r-md);
+  padding:18px 18px 16px;
+  box-shadow:var(--shadow-1), inset 0 1px 0 rgba(255,255,255,.05);
+  display:flex; flex-direction:column; gap:12px; min-height:150px;
+  transition:border-color var(--d-base) var(--ease), transform var(--d-base) var(--ease);
+}
+@media (hover:hover){ .kpi:hover{ border-color:rgba(234,241,250,.20); transform:translateY(-2px); } }
+.kpi .kpi-label{
+  font-family:var(--font-mono); font-size:11px; font-weight:600;
+  letter-spacing:.2em; text-transform:uppercase; color:var(--faint);
+}
+.kpi .kpi-body{ margin-top:auto; }
+.kpi .kpi-foot{ margin-top:10px; font-size:13px; line-height:1.6; color:var(--muted); }
+.kpi .kpi-foot b{ color:var(--text); font-weight:800; }
+
+/* 第 1 张：三状态叠排（色 + 形 + 数字三重编码） */
+.tally{ display:flex; align-items:flex-end; gap:var(--sp-3); flex-wrap:wrap; }
+.tally .t{ display:flex; align-items:baseline; gap:5px; }
+.tally .t .n{
+  font-family:var(--font-mono); font-size:clamp(26px,4.6vw,34px); font-weight:700;
+  line-height:1; letter-spacing:-.03em;
+}
+.tally .t .u{ font-size:12px; color:var(--muted); font-weight:600; }
+.t-live  .n{ color:var(--st-live); }
+.t-cache .n{ color:var(--st-cache); }
+.t-down  .n{ color:var(--st-down); }
+
+/* 第 2 张：削减算式 */
+.cutmath{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+.cutmath .from{
+  font-family:var(--font-mono); font-size:clamp(24px,4.4vw,32px); font-weight:600;
+  color:var(--faint); text-decoration:line-through; text-decoration-thickness:2px;
+  text-decoration-color:rgba(224,82,82,.7);
+}
+.cutmath .arrow{ font-family:var(--font-mono); color:var(--faint); font-size:18px; }
+.cutmath .to{
+  font-family:var(--font-mono); font-size:clamp(34px,6.4vw,46px); font-weight:700;
+  color:var(--accent); line-height:1; letter-spacing:-.03em;
+}
+
+/* 第 3 张：spider 来源 —— 静态筛的依据 */
+.spider-name{ font-size:clamp(26px,4.6vw,34px); font-weight:900; letter-spacing:-.03em; }
+.spider-name code{ font-size:.78em; font-weight:600; color:var(--muted); letter-spacing:0; }
+
+/* 第 4 张：与上次的差分，三行小台账 */
+.delta{ display:flex; flex-direction:column; gap:7px; margin-top:2px; }
+.delta li{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+.delta .dk{ font-size:13px; color:var(--muted); }
+.delta .dv{ font-family:var(--font-mono); font-size:17px; font-weight:700; letter-spacing:-.01em; }
+.dv.bad{ color:var(--st-down); }
+.dv.good{ color:var(--accent); }
+.dv.neu{ color:var(--faint); }
+
+/* ═══════════════════════════════════════════════════════════════
+   七、柱状台账 —— 纯 CSS grid
+   柱子的 DOM 结构、data-w / --w / hatch / --i 的用法，统一写在本文件顶部的
+   「渲染契约」注释里，这里只定义样式。
+   ⚠️ 样式段里不许出现占位符名（注释里也不行）—— string.Template 会把它替换掉，
+      一坨标签掉进 <style> 里，整份报告的样式就废了。
+   ═══════════════════════════════════════════════════════════════ */
+.ledger{ margin-top:var(--sp-4); }
+.ledger-top{
+  display:flex; align-items:baseline; justify-content:space-between;
+  gap:var(--sp-3); flex-wrap:wrap; padding-bottom:10px; border-bottom:1px solid var(--line);
+}
+.legend{ display:flex; gap:var(--sp-3); flex-wrap:wrap; }
+.legend .item{
+  display:inline-flex; align-items:center; gap:6px;
+  font-family:var(--font-mono); font-size:11px; letter-spacing:.1em; color:var(--faint);
+}
+.legend .swatch{ width:14px; height:8px; border-radius:2px; flex:none; }
+.swatch.solid{ background:var(--accent); }
+.swatch.hatch{
+  background-image:repeating-linear-gradient(135deg, rgba(110,168,254,.95) 0 2px, rgba(110,168,254,.18) 2px 5px);
+  border:1px solid rgba(110,168,254,.4);
+}
+
+.bars{ margin-top:6px; }
+.bar{
+  display:grid; grid-template-columns:minmax(0,1fr) 34px;
+  align-items:center; gap:10px;
+  padding:8px 0; border-bottom:1px solid var(--line-soft);
+}
+@media (min-width:700px){ .bar{ grid-template-columns:minmax(0,1fr) 48px; gap:var(--sp-3); } }
+.bar:last-child{ border-bottom:0; }
+.bar-label{
+  grid-column:1; grid-row:1;
+  font-family:var(--font-mono); font-size:12.5px; font-weight:500; line-height:1.35;
+  color:var(--text); letter-spacing:-.01em; overflow-wrap:anywhere;
+}
+.bar-track{
+  grid-column:1; grid-row:2;
+  margin-top:5px; height:8px; border-radius:var(--r-pill);
+  background:rgba(234,241,250,.05); overflow:hidden;
+}
+.bar-fill{
+  display:block; height:100%; border-radius:var(--r-pill);
+  /* 静态宽度就在行内的 --w 上（脚本渲染时给），所以 JS 挂了柱子也在。
+     JS 会按 data-w 重算一遍再覆盖 --w —— 刻意让「JS 只校正，不负责从无到有」。 */
+  width:var(--w, 0%);
+  transform-origin:0 50%;
+  transform:scaleX(var(--grow, 1));
+  /* 最高的一条：冷白实心。
+     原来是深色渐变，在深色底上几乎看不见；现在整条是冷白，
+     和下面的冷蓝斜纹（以及它们各自递减的 opacity）形成明确的主次。 */
+  background:var(--accent);
+}
+/* 入场：JS 先按 data-w 算好 --w 与 --grow，动画再把 --grow 从 0 拉到 1。
+   ⚠️ 不要改回 transition:width ——
+   实测：以 width:0 为基线用 transition 改 width，Chromium 会把目标百分比解析成 0px，
+   柱子会整条消失。scaleX 没有这个问题，而且只触发合成、不触发重排。 */
+body.ready .bar-fill{
+  animation:grow var(--d-slow) var(--ease) both;
+  animation-delay:calc(var(--i, 0) * 45ms + 120ms);
+}
+.bar-fill.hatch{
+  /* 其余各条：冷蓝斜纹，强度由行内 opacity 决定（越靠后越浅，一眼看出主次） */
+  background-image:
+    repeating-linear-gradient(135deg, rgba(110,168,254,.9) 0 2px, rgba(110,168,254,.15) 2px 6px),
+    linear-gradient(90deg, rgba(110,168,254,.28), rgba(110,168,254,.5));
+  border:1px solid rgba(110,168,254,.35);
+}
+.bar-val{
+  grid-column:2; grid-row:1 / span 2; align-self:center; text-align:right;
+  font-family:var(--font-mono); font-size:16px; font-weight:700;
+  color:var(--accent); letter-spacing:-.02em;
+}
+@media (min-width:700px){ .bar-val{ font-size:17px; } }
+.bar.zero .bar-val{ color:var(--faint); }
+
+.bar-tail{
+  display:grid; grid-template-columns:auto 1fr auto; gap:var(--sp-2);
+  align-items:baseline; padding-top:var(--sp-3); margin-top:var(--sp-2);
+  border-top:1px solid var(--line);
+  font-family:var(--font-mono); font-size:12px; color:var(--faint); letter-spacing:.04em;
+}
+.bar-tail b{ color:var(--muted); font-weight:600; }
+
+/* 根因卡：整段报告最重要的一句话，用左侧冷蓝发丝 + 三步链条压住视线 */
+.rootcause{
+  margin-top:var(--sp-4); padding:var(--sp-4) var(--sp-4) var(--sp-4) 22px;
+  background:linear-gradient(180deg, var(--panel-2), rgba(19,26,41,.66));
+  border:1px solid var(--line); border-left:2px solid var(--live);
+  border-radius:var(--r-md); box-shadow:var(--shadow-1);
+}
+.rootcause .rc-tag{
+  font-family:var(--font-mono); font-size:11px; font-weight:600; letter-spacing:.22em;
+  color:var(--live); text-transform:uppercase;
+}
+.rootcause p{ margin-top:10px; max-width:78ch; color:var(--muted); font-size:14px; }
+.rootcause p strong{ color:var(--text); font-weight:800; }
+.rootcause code{
+  background:rgba(234,241,250,.07); border:1px solid var(--line-soft);
+  border-radius:var(--r-sm); padding:1px 6px; color:var(--text);
+}
+.rootcause .rc-chain{ margin-top:var(--sp-3); display:grid; grid-template-columns:1fr; gap:8px; }
+@media (min-width:768px){ .rootcause .rc-chain{ grid-template-columns:repeat(3,1fr); } }
+.rc-step{
+  border:1px solid var(--line-soft); border-radius:var(--r-sm);
+  padding:10px 12px; background:rgba(8,12,20,.44);
+}
+.rc-step .s-n{ font-family:var(--font-mono); font-size:11px; letter-spacing:.2em; color:var(--live); }
+.rc-step .s-t{ margin-top:5px; font-size:13px; color:var(--text); font-weight:700; }
+.rc-step .s-d{ margin-top:2px; font-size:12px; color:var(--faint); }
+
+/* ═══════════════════════════════════════════════════════════════
+   八、上游源状态表 —— 真 <table>
+   表格行的 <tr> 结构、三状态的类名与「色 + 形 + 字」三重编码规则，
+   统一写在本文件顶部的「渲染契约」注释里，这里只定义样式。
+   ⚠️ 样式段里不许出现占位符名（注释里也不行），理由同上一条。
+   ═══════════════════════════════════════════════════════════════ */
+.tbl-scroll{
+  margin-top:var(--sp-4); overflow-x:auto; -webkit-overflow-scrolling:touch;
+  border:1px solid var(--line); border-radius:var(--r-md);
+  background:linear-gradient(180deg, var(--panel), rgba(13,18,32,.6));
+  box-shadow:var(--shadow-1);
+}
+table{ width:100%; border-collapse:collapse; min-width:600px; }
+caption{
+  text-align:left; padding:14px 16px 0; color:var(--faint); font-size:12px;
+  font-family:var(--font-mono); letter-spacing:.06em;
+}
+thead th{
+  position:sticky; top:0; z-index:1;
+  background:rgba(46,58,82,.92); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  text-align:left; padding:11px 16px; white-space:nowrap;
+  font-family:var(--font-mono); font-size:11px; font-weight:600;
+  letter-spacing:.18em; text-transform:uppercase; color:var(--muted);
+  border-bottom:1px solid var(--line);
+}
+tbody td{
+  padding:12px 16px; border-bottom:1px solid var(--line-soft);
+  vertical-align:top; font-size:13.5px; color:var(--text);
+}
+tbody tr:last-child td{ border-bottom:0; }
+tbody tr:hover td{ background:rgba(234,241,250,.028); }
+td.num, th.num{ font-family:var(--font-mono); text-align:right; font-variant-numeric:tabular-nums; }
+td.src-id, td.url{
+  font-family:var(--font-mono); font-size:12.5px; color:var(--muted);
+  overflow-wrap:anywhere; max-width:280px;
+}
+td.note{ color:var(--muted); font-size:13px; max-width:360px; }
+.src-name{ font-weight:800; letter-spacing:-.01em; font-size:13.5px; }
+.src-row.is-cache th, .src-row.is-cache td{ background:rgba(240,169,44,.055); }
+.src-row.is-down td{ color:var(--faint); }
+.src-row.is-down .src-name{ color:var(--muted); }
+
+/* 状态徽章：色 + 形（点形状不同）+ 字，三重编码
+   .chip 与 .src-status 是同一组样式的两个别名，脚本用哪个都行 */
+.chip, .src-status{
+  display:inline-flex; align-items:center; gap:7px;
+  font-family:var(--font-mono); font-size:11px; font-weight:700;
+  letter-spacing:.14em; text-transform:uppercase;
+  padding:4px 10px; border-radius:var(--r-pill); white-space:nowrap;
+  border:1px solid transparent;
+}
+.chip .pip, .src-status .pip, .chip .src-status-pip, .src-status .src-status-pip{
+  width:7px; height:7px; flex:none; display:inline-block;
+}
+.chip.live, .src-status.live{ color:var(--st-live); background:rgba(110,168,254,.11); border-color:rgba(110,168,254,.34); }
+.chip.live .pip, .chip.live .src-status-pip, .src-status.live .pip, .src-status.live .src-status-pip{
+  border-radius:50%; background:var(--st-live); box-shadow:0 0 0 3px rgba(110,168,254,.16);
+}
+.chip.cache, .src-status.cache{ color:var(--st-cache); background:rgba(240,169,44,.11); border-color:rgba(240,169,44,.36); }
+.chip.cache .pip, .chip.cache .src-status-pip, .src-status.cache .pip, .src-status.cache .src-status-pip{
+  background:var(--st-cache); border-radius:1px; transform:rotate(45deg);   /* 菱形＝缓存 */
+}
+.chip.down, .src-status.down{ color:var(--st-down); background:rgba(224,82,82,.11); border-color:rgba(224,82,82,.34); }
+.chip.down .pip, .chip.down .src-status-pip, .src-status.down .pip, .src-status.down .src-status-pip{
+  background:var(--st-down); border-radius:1px;                             /* 方块＝挂了 */
+}
+.chip.rule, .src-status.rule{ color:var(--muted); background:rgba(234,241,250,.06); border-color:var(--line); }
+.chip.rule .pip, .chip.rule .src-status-pip, .src-status.rule .pip, .src-status.rule .src-status-pip{
+  background:var(--muted); border-radius:50%;
+}
+
+/* 徽章虚高的提醒条 */
+.callout{
+  margin-top:var(--sp-3); display:flex; gap:var(--sp-3); align-items:flex-start;
+  padding:14px 16px; border:1px dashed rgba(240,169,44,.42); border-radius:var(--r-md);
+  background:rgba(240,169,44,.055);
+}
+.callout .co-tag{
+  font-family:var(--font-mono); font-size:11px; font-weight:700; letter-spacing:.18em;
+  color:var(--st-cache); flex:none; padding-top:2px;
+}
+.callout p{ font-size:13.5px; color:var(--muted); }
+.callout p strong{ color:var(--text); font-weight:800; }
+
+/* ═══════════════════════════════════════════════════════════════
+   九、被砍掉的站 —— 三组真 <button> 折叠
+   ★ dropped 系列占位符需要的 <li class="drop-item"> 结构与三列含义，
+     统一写在本文件顶部的「渲染契约」注释里，这里只定义样式。
+   ═══════════════════════════════════════════════════════════════ */
+.groups{ display:flex; flex-direction:column; gap:var(--sp-3); margin-top:var(--sp-4); }
+.group{
+  border:1px solid var(--line); border-radius:var(--r-md);
+  background:linear-gradient(180deg, var(--panel), rgba(13,18,32,.6));
+  box-shadow:var(--shadow-1); overflow:hidden;
+}
+.acc-btn{
+  width:100%; min-height:64px;              /* 触摸目标 ≥ 44px */
+  display:grid; grid-template-columns:auto 1fr auto; align-items:center;
+  gap:var(--sp-3); text-align:left; cursor:pointer;
+  padding:14px clamp(14px,2.4vw,20px);
+  background:transparent; border:0; color:var(--text);
+  font-family:inherit; font-size:inherit;
+  transition:background var(--d-fast) ease-out;
+}
+@media (hover:hover){ .acc-btn:hover{ background:rgba(234,241,250,.045); } }
+.acc-btn:focus-visible{ outline:2px solid var(--ring); outline-offset:-2px; }
+.acc-count{
+  font-family:var(--font-mono); font-size:13px; font-weight:700;
+  color:var(--accent); background:rgba(234,241,250,.08);
+  border:1px solid var(--line); border-radius:var(--r-pill);
+  padding:3px 10px; flex:none; letter-spacing:.02em;
+}
+.acc-titles{ min-width:0; }
+.acc-title{ font-size:15.5px; font-weight:800; letter-spacing:-.02em; }
+.acc-note{ margin-top:2px; font-size:12.5px; color:var(--faint); }
+.acc-caret{
+  width:22px; height:22px; flex:none; position:relative;
+  transition:transform var(--d-base) var(--ease);
+}
+.acc-caret::before, .acc-caret::after{
+  content:""; position:absolute; top:50%; width:11px; height:2px;
+  background:var(--muted); border-radius:2px;
+}
+.acc-caret::before{ left:0; }
+.acc-caret::after{ right:0; }
+.acc-btn[aria-expanded="true"] .acc-caret{ transform:rotate(180deg); }
+.acc-btn[aria-expanded="true"] .acc-caret::before,
+.acc-btn[aria-expanded="true"] .acc-caret::after{ background:var(--accent); }
+
+/* 折叠本体：max-height + --ease 平滑过渡（JS 写入实测 scrollHeight） */
+.panel-collapse{ max-height:0; overflow:hidden; transition:max-height var(--d-slow) var(--ease); }
+.panel-inner{ padding:2px clamp(14px,2.4vw,20px) clamp(16px,2.4vw,22px); }
+.panel-inner > .pi-hint{ font-size:12.5px; color:var(--faint); margin-bottom:var(--sp-3); }
+
+/* ── 组内明细列表（dropped 系列占位符的目标容器） ── */
+.drop-head, .drop-list .drop-item{
+  display:grid; grid-template-columns:1fr; gap:2px 14px;
+}
+@media (min-width:760px){
+  .drop-head, .drop-list .drop-item{
+    grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) minmax(0,1.4fr);
+    align-items:baseline;
+  }
+}
+.drop-head{
+  padding:0 14px 8px; margin-bottom:2px;
+  font-family:var(--font-mono); font-size:10.5px; font-weight:600;
+  letter-spacing:.16em; text-transform:uppercase; color:var(--faint);
+  border-bottom:1px solid var(--line);
+}
+.drop-list{
+  border:1px solid var(--line); border-radius:var(--r-sm);
+  background:rgba(8,12,20,.42); overflow:hidden;
+}
+.drop-list .drop-item{
+  padding:10px 14px; border-bottom:1px solid var(--line-soft);
+  transition:background var(--d-fast) ease-out;
+}
+.drop-list .drop-item:last-child{ border-bottom:0; }
+@media (hover:hover){ .drop-list .drop-item:hover{ background:rgba(31,41,61,.5); } }
+.drop-key{
+  font-family:var(--font-mono); font-size:12.5px; font-weight:600;
+  color:var(--text); overflow-wrap:anywhere;
+}
+.drop-name{ font-size:13px; color:var(--muted); overflow-wrap:anywhere; }
+.drop-reason{
+  font-family:var(--font-mono); font-size:12px; color:var(--st-cache);
+  overflow-wrap:anywhere;
+}
+.drop-reason.plain{ color:var(--muted); }
+.drop-reason.chip{ font-size:11px; }
+
+/* 组 1 的「典型样本」六宫格：桌面两列，偶数列下沉制造错落 */
+.samples{ display:grid; grid-template-columns:1fr; gap:var(--sp-2); }
+@media (min-width:760px){ .samples{ grid-template-columns:1fr 1fr; gap:var(--sp-2) var(--sp-3); } }
+.sample{
+  display:grid; grid-template-columns:1fr auto; gap:2px 12px; align-items:baseline;
+  padding:11px 14px; border:1px solid var(--line-soft); border-radius:var(--r-sm);
+  background:rgba(8,12,20,.40);
+  transition:border-color var(--d-fast) ease-out, background var(--d-fast) ease-out;
+}
+@media (hover:hover){ .sample:hover{ border-color:rgba(234,241,250,.18); background:rgba(31,41,61,.5); } }
+.sample .s-key{
+  font-family:var(--font-mono); font-size:12.5px; font-weight:600; color:var(--text);
+  overflow-wrap:anywhere;
+}
+.sample .s-api{
+  font-family:var(--font-mono); font-size:11.5px; color:var(--st-cache);
+  justify-self:end; text-align:right; overflow-wrap:anywhere;
+}
+.sample .s-name{ grid-column:1 / -1; font-size:12.5px; color:var(--muted); margin-top:3px; }
+@media (min-width:760px){
+  .samples .sample:nth-child(even){ transform:translateY(14px); }
+  .samples{ padding-bottom:14px; }
+}
+.foldmore{ margin-top:var(--sp-3); padding-top:var(--sp-3); border-top:1px dashed var(--line); }
+
+/* 组内嵌套表格 */
+.inner-scroll{
+  overflow-x:auto; -webkit-overflow-scrolling:touch;
+  border:1px solid var(--line); border-radius:var(--r-sm);
+  background:rgba(8,12,20,.42);
+}
+.inner-scroll table{ min-width:520px; }
+.inner-scroll thead th{ font-size:10px; padding:9px 12px; letter-spacing:.14em; }
+.inner-scroll tbody td{ padding:9px 12px; font-size:12.5px; }
+td.k{ font-family:var(--font-mono); font-size:12.5px; color:var(--text); overflow-wrap:anywhere; }
+td.n{ font-size:13px; }
+td.a{ font-family:var(--font-mono); font-size:12px; color:var(--st-cache); overflow-wrap:anywhere; }
+td.a.plain{ color:var(--muted); }
+td.r{ font-family:var(--font-mono); font-size:12px; color:var(--live); white-space:nowrap; }
+tr.total-row td{ border-top:1px solid var(--line); }
+tr.total-row td.k{ color:var(--accent); font-weight:700; }
+tr.total-row td.a, tr.total-row td.r{ color:var(--muted); }
+
+/* 重复站对比条（组 3） */
+.dupbar{ margin-top:var(--sp-3); display:grid; gap:var(--sp-2); }
+.dupbar-row{ display:grid; grid-template-columns:1fr; gap:6px; }
+@media (min-width:720px){ .dupbar-row{ grid-template-columns:118px 1fr 168px; align-items:center; gap:12px; } }
+.dupbar-lab{ font-family:var(--font-mono); font-size:11.5px; letter-spacing:.1em; color:var(--faint); }
+.dupbar-track{
+  height:16px; border-radius:var(--r-sm); background:rgba(234,241,250,.05);
+  border:1px solid var(--line-soft); overflow:hidden;
+}
+.dupbar-fill{
+  /* ⚠️ display:block 不能省：这个元素是 <span>，默认是 inline 盒，
+     inline 盒会【忽略 width】—— 曾经因此整条对比条渲染成 0×18、完全看不见，
+     而 getComputedStyle(el).width 还照样报 "100%"，非常难查。
+     同理检查：.bar-fill / .dual-bar .seg 也必须是 non-inline 的盒。 */
+  display:block;
+  height:100%; width:var(--w, 0%); transform-origin:0 50%;
+  transform:scaleX(var(--grow, 1));
+}
+/* 对比条入场同理：静态宽度由行内 --w 决定，动画只做 scaleX */
+body.ready .dupbar-fill{ animation:grow var(--d-slow) var(--ease) 160ms both; }
+.dupbar-fill.up{
+  background-image:repeating-linear-gradient(135deg, rgba(224,82,82,.55) 0 3px, rgba(224,82,82,.16) 3px 8px);
+}
+.dupbar-fill.ours{ background:linear-gradient(90deg, rgba(255,255,255,.5), rgba(255,255,255,.92)); }
+.dupbar-val{ font-family:var(--font-mono); font-size:12.5px; color:var(--muted); text-align:left; }
+.dupbar-val b{ color:var(--accent); font-weight:700; }
+
+/* ═══════════════════════════════════════════════════════════════
+   十、两份配置对比条
+   ═══════════════════════════════════════════════════════════════ */
+.compare{ display:grid; grid-template-columns:1fr; gap:var(--sp-3); margin-top:var(--sp-4); }
+@media (min-width:860px){ .compare{ grid-template-columns:1fr 1fr; } }
+.cmp{
+  border:1px solid var(--line); border-radius:var(--r-md); padding:var(--sp-4);
+  background:linear-gradient(180deg, var(--panel), rgba(13,18,32,.62));
+  box-shadow:var(--shadow-1);
+}
+.cmp.ours{
+  border-color:rgba(110,168,254,.34);
+  background:linear-gradient(180deg, rgba(31,41,61,.86), rgba(19,26,41,.72));
+}
+.cmp .cmp-k{
+  font-family:var(--font-mono); font-size:11px; font-weight:600;
+  letter-spacing:.2em; text-transform:uppercase; color:var(--faint);
+}
+.cmp .cmp-big{ margin-top:10px; display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+.cmp .cmp-big .v{
+  font-family:var(--font-mono); font-size:clamp(30px,5.6vw,40px); font-weight:700;
+  letter-spacing:-.03em; line-height:1; color:var(--accent);
+}
+.cmp .cmp-big .u{ font-size:13px; color:var(--muted); font-weight:600; }
+.cmp .cmp-d{ margin-top:10px; font-size:13.5px; color:var(--muted); }
+.cmp .cmp-d b{ color:var(--text); font-weight:800; }
+.cmp .cmp-d .bad{ color:var(--st-down); font-weight:800; }
+.cmp .cmp-d .ok{ color:var(--live); font-weight:800; }
+
+/* 双轨条：红色斜纹＝必然失败的部分，白＝可用部分
+   ★ 脚本渲染时给 .seg 同时写 style="--w:47.9%" 与 data-w="47.9"，两者都行 */
+.dual{ margin-top:var(--sp-3); }
+.dual-bar{
+  display:flex; height:22px; border-radius:var(--r-sm); overflow:hidden;
+  border:1px solid var(--line-soft); background:rgba(234,241,250,.05);
+}
+.dual-bar .seg{
+  height:100%; width:var(--w, 0%); transform-origin:0 50%;
+  transform:scaleX(var(--grow, 1));
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-mono); font-size:10.5px; font-weight:700; letter-spacing:.06em;
+  overflow:hidden;
+}
+body.ready .dual-bar .seg{ animation:grow var(--d-base) var(--ease) 260ms both; }
+.dual-bar .seg.bad{
+  background-image:repeating-linear-gradient(135deg, rgba(224,82,82,.55) 0 3px, rgba(224,82,82,.14) 3px 8px);
+  color:#ffd9d9;
+}
+.dual-bar .seg.ok{ background:linear-gradient(90deg, rgba(255,255,255,.5), rgba(255,255,255,.92)); color:#0c1220; }
+.dual-scale{
+  display:flex; justify-content:space-between; margin-top:6px;
+  font-family:var(--font-mono); font-size:11px; color:var(--faint); letter-spacing:.08em;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   十一、页脚
+   ═══════════════════════════════════════════════════════════════ */
+footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1px solid var(--line); }
+.foot-grid{ display:grid; grid-template-columns:1fr; gap:var(--sp-4); }
+@media (min-width:820px){ .foot-grid{ grid-template-columns:1.4fr 1fr 1fr; } }
+.foot-k{
+  font-family:var(--font-mono); font-size:11px; font-weight:600;
+  letter-spacing:.2em; text-transform:uppercase; color:var(--faint);
+}
+.foot-v{ margin-top:8px; font-size:13.5px; color:var(--muted); }
+.foot-v code{
+  font-family:var(--font-mono); font-size:13px; font-weight:600; color:var(--text);
+  background:rgba(234,241,250,.07); border:1px solid var(--line-soft);
+  border-radius:var(--r-sm); padding:2px 7px;
+}
+.legal{
+  margin-top:var(--sp-5); padding-top:var(--sp-4); border-top:1px dashed var(--line);
+  display:flex; align-items:baseline; gap:var(--sp-3); flex-wrap:wrap; justify-content:space-between;
+}
+.legal .l1{ font-size:15px; font-weight:800; letter-spacing:-.01em; color:var(--text); }
+.legal .l2{ font-family:var(--font-mono); font-size:11px; letter-spacing:.14em; color:var(--faint); }
+
+/* ═══════════════════════════════════════════════════════════════
+   十二、动效降级 —— prefers-reduced-motion: reduce 时全部关闭
+   ═══════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    animation-duration:.001ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.001ms !important;
+    transition-delay:0ms !important;
+    scroll-behavior:auto !important;
+  }
+  .reveal{ opacity:1 !important; transform:none !important; }
+  .loadbar{ display:none !important; }
+  .samples .sample:nth-child(even){ transform:none !important; }
+  /* 柱子/对比条：基础宽度本来就是 --w，所以关掉动画即可，不用再补宽度 */
+  .bar-fill, .dual-bar .seg, .dupbar-fill{ animation:none !important; }
+}
+/* 无 JS 兜底：内容必须可读，柱子必须可见（基础宽度已是 --w，这里再兜一层） */
+.no-js .reveal{ opacity:1; transform:none; }
+.no-js .panel-collapse{ max-height:none; }
+.no-js .bar-fill, .no-js .dual-bar .seg, .no-js .dupbar-fill{ width:var(--w,0%) !important; animation:none; }
+</style>
+</head>
+<body class="no-js">
+<noscript><style>
+  /* 无 JS：直接展开全部内容。柱子的宽度写在行内 --w 上，
+     基础样式 width:var(--w) 已经生效，所以这里不需要再补宽度。 */
+  .reveal{ opacity:1 !important; transform:none !important; }
+  .panel-collapse{ max-height:none !important; }
+  .bar-fill, .dual-bar .seg, .dupbar-fill{ animation:none !important; }
+</style></noscript>
+
+<!-- 氛围层：渐变网格 + 颗粒（纯 CSS + 内联 SVG，无外部请求） -->
+<div class="atmos" aria-hidden="true"></div>
+<div class="loadbar" aria-hidden="true"></div>
+
+<div class="wrap">
+
+  <!-- ═══════════ 页头 ═══════════ -->
+  <header class="top">
+    <p class="eyebrow reveal" style="--i:0">
+      <span class="dot" aria-hidden="true"></span>
+      <span>GitHub Action 自动构建</span>
+      <span class="sep" aria-hidden="true">/</span>
+      <span>$generator</span>
+      <span class="sep" aria-hidden="true">/</span>
+      <span>$run_label</span>
+    </p>
+
+    <h1 class="reveal" style="--i:1">链接巡检报告<span class="light"> · 每日裁剪台账</span></h1>
+
+    <div class="stamp reveal" style="--i:2">
+      <span class="stamp-k">构建时间</span>
+      <span class="stamp-v accent">$built_at</span>
+      <span class="stamp-k">上游源</span>
+      <span class="stamp-v">$src_total 个</span>
+      <span class="stamp-k">产出站点</span>
+      <span class="stamp-v">$site_after 个</span>
+    </div>
+
+    <p class="lede reveal" style="--i:3">
+      汇总进来 <strong>$site_before 个源</strong>，剔掉 <strong>$site_cut 个跑不起来的</strong>，留下 <strong>$site_after 个能用的</strong>。
+    </p>
+  </header>
+
+  <main>
+
+    <!-- ═══════════ 01 · 四张 KPI 房 ═══════════ -->
+    <section id="kpi" aria-labelledby="kpi-h">
+      <div class="sec-head reveal" style="--i:4">
+        <span class="sec-num" aria-hidden="true">01</span>
+        <h2 id="kpi-h">今天这一份<span class="light"> · 一眼数</span></h2>
+      </div>
+
+      <div class="kpis">
+
+        <!-- KPI 1：上游源三状态（缓存与活必须分开看） -->
+        <article class="kpi reveal" style="--i:5">
+          <h3 class="kpi-label">上游源</h3>
+          <div class="kpi-body">
+            <div class="tally">
+              <span class="t t-live"><span class="n">$src_live</span><span class="u">活</span></span>
+              <span class="t t-cache"><span class="n">$src_cache</span><span class="u">缓存</span></span>
+              <span class="t t-down"><span class="n">$src_down</span><span class="u">挂</span></span>
+            </div>
+            <p class="kpi-foot">共 <b>$src_total</b> 个上游源。cache 是上次的缓存，不算今天抓到。</p>
+          </div>
+        </article>
+
+        <!-- KPI 2：站点削减 -->
+        <article class="kpi reveal" style="--i:6">
+          <h3 class="kpi-label">站点</h3>
+          <div class="kpi-body">
+            <div class="cutmath">
+              <span class="from">$site_before</span>
+              <span class="arrow" aria-hidden="true">→</span>
+              <span class="to">$site_after</span>
+            </div>
+            <p class="kpi-foot">剔掉 <b>$site_cut</b> 个（主因是"类不在选定的那个包里"），留下 <b>$site_after</b> 个，每个都能跑。</p>
+          </div>
+        </article>
+
+        <!-- KPI 3：spider 来源 —— 静态筛的依据 -->
+        <article class="kpi reveal" style="--i:7">
+          <h3 class="kpi-label">spider</h3>
+          <div class="kpi-body">
+            <div class="spider-name">$spider_name <code>$spider_id</code></div>
+            <p class="kpi-foot">这批源共用这一个程序包，里面 <b>$spider_classes</b> 个类。装进去的源只能跑得起"类就在这 <b>$spider_classes</b> 个里"的那些 —— 换一个包，被剔掉的名单就整个不一样。</p>
+          </div>
+        </article>
+
+        <!-- KPI 4：与上次的差分 -->
+        <article class="kpi reveal" style="--i:8">
+          <h3 class="kpi-label">对比上次</h3>
+          <div class="kpi-body">
+            <ul class="delta">
+              <li><span class="dk">死源</span><span class="dv bad">$delta_down</span></li>
+              <li><span class="dk">新增源</span><span class="dv good">$delta_new</span></li>
+              <li><span class="dk">消失源</span><span class="dv neu">$delta_gone</span></li>
+            </ul>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- ═══════════ 02 · 为什么砍掉 N 个 ═══════════ -->
+    <section id="why" aria-labelledby="why-h">
+      <div class="sec-head reveal" style="--i:9">
+        <span class="sec-num" aria-hidden="true">02</span>
+        <h2 id="why-h">为什么砍掉 <span class="light">$cut_headline</span></h2>
+      </div>
+      <p class="sec-sub">柱子的长度就是砍掉的数量。最长的这一条是 $chart_max_label 个。</p>
+
+      <div class="pane reveal" style="--i:10">
+        <div class="ledger">
+          <div class="ledger-top">
+            <h4>为什么砍 · 按数量</h4>
+            <div class="legend" aria-hidden="true">
+              <span class="item"><span class="swatch solid"></span>最大的一块</span>
+              <span class="item"><span class="swatch hatch"></span>其余（越浅越少）</span>
+            </div>
+          </div>
+
+          <!-- ★ $$chart_bars：整段柱状图 <div class="bar"> 序列。
+               结构见文件顶部「渲染契约 · 片段结构规范」。 -->
+          <div class="bars" id="bars">
+$chart_bars
+          </div>
+
+          <p class="bar-tail">
+            <span>长尾</span>
+            <span><b>$bar_tail_lead</b> $bar_tail_text</span>
+            <span>$bar_tail_sum</span>
+          </p>
+        </div>
+
+        <!-- 根因：整页最重要的一段话。文案固定，不随数据变。
+             ⚠️ 措辞边界：组 1（类不在包里）的规模【由我们选哪个 jar 决定】，
+                不是"这些源本身差"。真实数据：同一个 188 站的池子，
+                顶层放肥猫的包 → 组 1 有 105 个；放王二小的包 → 只有 53 个。
+                所以这里必须先说清"单仓只能带一个包"，再说"剔掉是为了不卡"。 -->
+        <div class="rootcause">
+          <p class="rc-tag">一句话说清</p>
+          <p>
+            <strong>单仓这份格式，顶层只能指定一个程序包。</strong>
+            所以汇总进来的源里，有一批要用的类不在这个包里 ——
+            <strong>不剔掉，App 加载时就抛 ClassNotFoundException，而且每次搜索都要白等一次超时</strong>。
+            这就是"越搜越慢、好多源永远搜不出东西"的来源。
+          </p>
+          <p style="margin-top:10px">
+            上游那份配置最大的毛病就在这：<strong>$site_before 个源里有 $site_cut 个永远出不了结果</strong>，
+            却全都写在里面。我们不是修好了它 —— 我们只是<strong>把跑不起来的剔掉，让留下来的每个都能用</strong>。
+          </p>
+
+          <div class="rc-chain">
+            <div class="rc-step">
+              <p class="s-n">01 · 源里写着</p>
+              <p class="s-t">要用 csp_XxxGuard</p>
+              <p class="s-d">但这个包里没有它</p>
+            </div>
+            <div class="rc-step">
+              <p class="s-n">02 · 打开</p>
+              <p class="s-t">直接失败</p>
+              <p class="s-d">没有备用方案</p>
+            </div>
+            <div class="rc-step">
+              <p class="s-n">03 · 搜索</p>
+              <p class="s-t">白等一次超时</p>
+              <p class="s-d">搜索又慢又没结果</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════ 03 · 上游源状态表 ═══════════ -->
+    <section id="sources" aria-labelledby="src-h">
+      <div class="sec-head reveal" style="--i:9">
+        <span class="sec-num" aria-hidden="true">03</span>
+        <h2 id="src-h">上游源状态<span class="light"> $sources_heading</span></h2>
+      </div>
+      <p class="sec-sub">共 $src_total 个来源，每个的结果都列在下面。</p>
+
+      <div class="tbl-scroll reveal" style="--i:10">
+        <table>
+          <caption>构建时刻的快照 · $built_at</caption>
+          <thead>
+            <tr>
+              <th scope="col">源</th>
+              <th scope="col">状态</th>
+              <th scope="col" class="num">站点数</th>
+              <th scope="col">用的地址</th>
+              <th scope="col">备注</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- ★ $$sources_table：完整 <tr class="src-row …"> 序列。
+                 结构见文件顶部「渲染契约 · 片段结构规范」。 -->
+$sources_table
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout reveal" style="--i:11">
+        <span class="co-tag">徽章口径</span>
+        <p>
+          上游把「用缓存」也算成功，所以它写「$src_total/$src_total 可用」。
+          今天真正抓到的只有 <strong>$src_live_badge 个</strong>，还有 $src_cache 个用的是旧缓存 —— 能用，但不新。
+        </p>
+      </div>
+    </section>
+
+    <!-- ═══════════ 04 · 被砍掉的站 ═══════════ -->
+    <section id="dropped" aria-labelledby="drop-h">
+      <div class="sec-head reveal" style="--i:9">
+        <span class="sec-num" aria-hidden="true">04</span>
+        <h2 id="drop-h">被砍掉的站<span class="light"> · 三个原因</span></h2>
+      </div>
+      <p class="sec-sub">被剔掉的就是这三条原因，<strong>性质完全不同</strong>：第一条由"选了哪个程序包"决定，不是这些源本身差；第二条才是真的内容质量问题。点标题看明细。</p>
+
+      <div class="groups">
+
+        <!-- ── 组 1 · 类不在 jar 里 ── -->
+        <section class="group reveal">
+          <h3 style="margin:0">
+            <button class="acc-btn" type="button" aria-expanded="false" aria-controls="g1">
+              <span class="acc-count">$drop_g1_count</span>
+              <span class="acc-titles">
+                <span class="acc-title">类不在包里（$drop_g1_count）</span>
+                <span class="acc-note">$drop_g1_note</span>
+              </span>
+              <span class="acc-caret" aria-hidden="true"></span>
+            </button>
+          </h3>
+          <div class="panel-collapse" id="g1" hidden>
+            <div class="panel-inner">
+
+              <!-- ★ $$drop_g1_samples：组 1 的「典型样本」区域（整段 HTML 由脚本给，
+                   空串则整块不出现）。结构见文件顶部「渲染契约 · 片段结构规范」。 -->
+$drop_g1_samples
+
+              <!-- ★ $$drop_g1_chart：组 1 的完整分布表（整段 HTML 由脚本给，
+                   空串则整块不出现）。结构见文件顶部「渲染契约 · 片段结构规范」。 -->
+$drop_g1_chart
+
+              <h4 style="margin-top:16px">明细 · 一条一条看</h4>
+              <div class="drop-head" aria-hidden="true">
+                <span>$drop_g1_col1</span><span>$drop_g1_col2</span><span>$drop_g1_col3</span>
+              </div>
+              <ul class="drop-list">
+                <!-- ★ $$dropped_missing_class：<li class="drop-item"> 序列（家族 / 被砍站数 / 判定）。
+                     结构见文件顶部「渲染契约 · 片段结构规范」。 -->
+$dropped_missing_class
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── 组 2 · 命中过滤规则 ── -->
+        <section class="group reveal">
+          <h3 style="margin:0">
+            <button class="acc-btn" type="button" aria-expanded="false" aria-controls="g2">
+              <span class="acc-count">$drop_g2_count</span>
+              <span class="acc-titles">
+                <span class="acc-title">规则命中（$drop_g2_count）</span>
+                <span class="acc-note">$drop_g2_note</span>
+              </span>
+              <span class="acc-caret" aria-hidden="true"></span>
+            </button>
+          </h3>
+          <div class="panel-collapse" id="g2" hidden>
+            <div class="panel-inner">
+              <p class="pi-hint">这些是教学课 / 广告 / 停更的源，搜电视剧只会返回垃圾结果。</p>
+              <div class="drop-head" aria-hidden="true">
+                <span>$drop_g2_col1</span><span>$drop_g2_col2</span><span>$drop_g2_col3</span>
+              </div>
+              <ul class="drop-list">
+                <!-- ★ $$dropped_by_rule：<li class="drop-item"> 序列（第三列是规则名）。
+                     结构见文件顶部「渲染契约 · 片段结构规范」。 -->
+$dropped_by_rule
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── 组 3 · 同名重复 ── -->
+        <section class="group reveal">
+          <h3 style="margin:0">
+            <button class="acc-btn" type="button" aria-expanded="false" aria-controls="g3">
+              <span class="acc-count">$drop_g3_count</span>
+              <span class="acc-titles">
+                <span class="acc-title">同名重复（$drop_g3_count）</span>
+                <span class="acc-note">$drop_g3_note</span>
+              </span>
+              <span class="acc-caret" aria-hidden="true"></span>
+            </button>
+          </h3>
+          <div class="panel-collapse" id="g3" hidden>
+            <div class="panel-inner">
+              <p class="pi-hint">上游遇到重名源会改名字留着，同一个源会出现好几份。我们只留一份。</p>
+              <div class="drop-head" aria-hidden="true">
+                <span>$drop_g3_col1</span><span>$drop_g3_col2</span><span>$drop_g3_col3</span>
+              </div>
+              <ul class="drop-list">
+                <!-- ★ $$dropped_duplicate：<li class="drop-item"> 序列（第二列是状态徽章）。
+                     结构见文件顶部「渲染契约 · 片段结构规范」。 -->
+$dropped_duplicate
+              </ul>
+
+              <p class="pi-hint" style="margin-top:var(--sp-3); margin-bottom:0">
+                <strong>$dup_lead</strong>
+              </p>
+
+              <!-- 重复量对比条：斜纹＝上游含重复，白＝去重后 -->
+              <div class="dupbar" role="img" aria-label="$dup_bar_aria">
+                <div class="dupbar-row">
+                  <span class="dupbar-lab">上游单仓</span>
+                  <span class="dupbar-track">
+                    <span class="dupbar-fill up" style="--w:$dup_bar_up_pct%" data-w="$dup_bar_up_pct"></span>
+                  </span>
+                  <span class="dupbar-val">$dup_bar_up_value</span>
+                </div>
+                <div class="dupbar-row">
+                  <span class="dupbar-lab">我们的</span>
+                  <span class="dupbar-track">
+                    <span class="dupbar-fill ours" style="--w:$dup_bar_ours_pct%" data-w="$dup_bar_ours_pct"></span>
+                  </span>
+                  <span class="dupbar-val">$dup_bar_ours_value</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </section>
+
+    <!-- ═══════════ 05 · 两份配置对比 ═══════════ -->
+    <section id="compare" aria-labelledby="cmp-h">
+      <div class="sec-head reveal" style="--i:9">
+        <span class="sec-num" aria-hidden="true">05</span>
+        <h2 id="cmp-h">两份配置<span class="light"> · 比一比</span></h2>
+      </div>
+
+      <div class="compare">
+        <article class="cmp reveal" style="--i:10">
+          <p class="cmp-k">上游单仓</p>
+          <p class="cmp-big"><span class="v">$site_before</span><span class="u">个站</span></p>
+          <p class="cmp-d">$cmp_a_desc</p>
+          <div class="dual" role="img" aria-label="$cmp_a_aria">
+            <div class="dual-bar">
+              <span class="seg bad" style="--w:$cmp_a_pct%" data-w="$cmp_a_pct">$cmp_a_bad</span>
+              <span class="seg ok" style="--w:$cmp_a_ok_pct%" data-w="$cmp_a_ok_pct">$cmp_a_ok</span>
+            </div>
+            <div class="dual-scale">
+              <span>0</span>
+              <span>用不了 $cmp_a_bad · 能用 $cmp_a_ok</span>
+              <span>$site_before</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="cmp ours reveal" style="--i:11">
+          <p class="cmp-k">我们的</p>
+          <p class="cmp-big"><span class="v">$site_after</span><span class="u">个站</span></p>
+          <p class="cmp-d">$cmp_b_desc</p>
+          <div class="dual" role="img" aria-label="$cmp_b_aria">
+            <div class="dual-bar">
+              <span class="seg ok" style="--w:100%" data-w="100">$cmp_b_seg_label</span>
+            </div>
+            <div class="dual-scale">
+              <span>0</span>
+              <span>无必然失败项</span>
+              <span>$site_after</span>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ═══════════ 页脚 ═══════════ -->
+  <footer>
+    <div class="foot-grid">
+      <div>
+        <p class="foot-k">生成器</p>
+        <p class="foot-v"><code>$generator</code></p>
+      </div>
+      <div>
+        <p class="foot-k">源代码与规则</p>
+        <p class="foot-v">
+          构建脚本和规则文件都在仓库里：<br>
+          <code>scripts/build.py</code> · <code>config/filter.json</code> · <code>config/sources.json</code>
+        </p>
+      </div>
+      <div>
+        <p class="foot-k">报告口径</p>
+        <p class="foot-v">
+          状态是构建那一刻的快照：<code>live</code> 是今天抓到的，<code>cache</code> 用的是上次缓存。$foot_scope
+        </p>
+      </div>
+    </div>
+
+    <div class="legal">
+      <p class="l1">本配置仅供学习交流，请勿商用</p>
+      <p class="l2">$foot_meta</p>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   报告页脚本 —— 三个职责，全部无依赖、无网络请求
+     ① 柱状图：按 data-w 重算 --w（最长的一根占轨道 93.4%），并给每根柱子
+        写好自己的 --grow / animation-delay。
+        脚本渲染时已经把静态 --w 写进行内样式了，所以这段 JS 没跑时柱子也在 ——
+        它只负责「归一化到统一刻度 + 播放入场」这两件事。
+     ② 三组折叠：max-height + --ease 平滑过渡，真 button + aria-expanded
+     ③ 入场编排 + 滚动触发行显，reduced-motion 下跳过
+   ═══════════════════════════════════════════════════════════════ */
+(function () {
+  "use strict";
+
+  var reduceMotion = window.matchMedia &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ── ① 柱状图归一化：最长的一行 = 93.4% 轨道宽（右侧给数值列留呼吸） ── */
+  (function buildBars() {
+    var bars = document.querySelectorAll("#bars .bar-fill");
+    if (!bars.length) return;
+    var max = 0, i, v;
+    for (i = 0; i < bars.length; i++) {
+      v = parseFloat(bars[i].getAttribute("data-w")) || 0;
+      if (v > max) max = v;
+    }
+    if (max <= 0) return;
+    for (i = 0; i < bars.length; i++) {
+      v = parseFloat(bars[i].getAttribute("data-w")) || 0;
+      /* 最小 1.6%：8px 高的轨道上，小于 1px 的柱子就等于没画 */
+      var pct = Math.max(1.6, Math.round(v / max * 93.4 * 10) / 10);
+      bars[i].style.setProperty("--w", pct + "%");
+      /* 动画只做 scaleX(0) → scaleX(--grow)：
+         --grow 恒为 1（拉到本来的宽度），宽度本身由 --w 决定。
+         这样动画不会去碰 width，也就不会踩到 Chromium 把百分比算成 0px 的坑。 */
+      bars[i].style.setProperty("--grow", "1");
+    }
+  })();
+
+  /* ── ①′ 每根柱子自己的错峰延迟，避免 CSS calc 嵌套带来的兼容问题 ── */
+  (function stagger() {
+    var rows = document.querySelectorAll("#bars .bar");
+    for (var i = 0; i < rows.length; i++) {
+      var fill = rows[i].querySelector(".bar-fill");
+      if (fill) fill.style.animationDelay = (i * 45 + 120) + "ms";
+    }
+  })();
+
+  /* ── ② 折叠：max-height 过渡 + aria 同步 ── */
+  var buttons = document.querySelectorAll(".acc-btn");
+  Array.prototype.forEach.call(buttons, function (btn) {
+    var panel = document.getElementById(btn.getAttribute("aria-controls"));
+    if (!panel) return;
+
+    btn.addEventListener("click", function () {
+      var open = btn.getAttribute("aria-expanded") === "true";
+      if (open) {
+        /* 先锁当前高度再归零，否则 max-height:0 会从 auto 直接跳变 */
+        panel.style.maxHeight = panel.scrollHeight + "px";
+        requestAnimationFrame(function () { panel.style.maxHeight = "0px"; });
+        btn.setAttribute("aria-expanded", "false");
+        window.setTimeout(function () {
+          if (btn.getAttribute("aria-expanded") === "false") {
+            panel.setAttribute("hidden", "");
+            panel.style.maxHeight = "";
+          }
+        }, reduceMotion ? 0 : 640);
+      } else {
+        panel.removeAttribute("hidden");
+        panel.style.maxHeight = panel.scrollHeight + "px";
+        btn.setAttribute("aria-expanded", "true");
+        /* 展开后改为 none，内容换行/缩放时不会被旧值截断 */
+        window.setTimeout(function () {
+          if (btn.getAttribute("aria-expanded") === "true") panel.style.maxHeight = "none";
+        }, reduceMotion ? 0 : 640);
+      }
+    });
+  });
+
+  /* 视口变化时，已展开的面板保持 auto 高度 */
+  window.addEventListener("resize", function () {
+    Array.prototype.forEach.call(document.querySelectorAll(".panel-collapse"), function (p) {
+      if (!p.hasAttribute("hidden")) p.style.maxHeight = "none";
+    });
+  });
+
+  /* ── ③ 入场编排：JS 可用才播动画，保证「JS 挂了内容也在」 ── */
+  document.body.classList.remove("no-js");
+  document.documentElement.classList.remove("no-js");
+
+  if (reduceMotion) {
+    document.body.classList.add("ready");
+  } else {
+    requestAnimationFrame(function () { document.body.classList.add("ready"); });
+
+    /* 折叠面板展开后，内部表格行做一次错峰显（只动 opacity / transform） */
+    if ("IntersectionObserver" in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          var rows = e.target.children;
+          for (var i = 0; i < rows.length; i++) {
+            rows[i].style.transition =
+              "opacity 260ms ease-out " + (i * 32) + "ms, transform 260ms ease-out " + (i * 32) + "ms";
+            rows[i].style.opacity = "1";
+            rows[i].style.transform = "none";
+          }
+          io.unobserve(e.target);
+        });
+      }, { threshold: 0.12 });
+
+      Array.prototype.forEach.call(
+        document.querySelectorAll(".inner-scroll tbody, .drop-list"),
+        function (box) {
+          var rows = box.children, i;
+          for (i = 0; i < rows.length; i++) {
+            rows[i].style.opacity = "0";
+            rows[i].style.transform = "translateY(8px)";
+          }
+          io.observe(box);
+        }
+      );
+    }
+  }
+})();
+</script>
+</body>
+</html>

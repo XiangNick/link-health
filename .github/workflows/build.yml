@@ -1,0 +1,168 @@
+name: 更新快照
+
+# ────────────────────────────────────────────────────────────────
+# 每天自动跑两次，也可以用 Actions 页面手动触发。
+#
+# 为什么监听 paths：
+#   自动提交会改 config.json / status.json / report.html / filter.json，
+#   如果 push 触发不加路径过滤，就会自己触发自己，无限循环。
+#   这里只监听【手工维护的输入】—— config/ 和 scripts/。
+# ────────────────────────────────────────────────────────────────
+
+"on":
+  schedule:
+    # UTC 02:00 / 14:00 = 北京时间 10:00 / 22:00
+    - cron: "0 2,14 * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "config/**"
+      - "scripts/**"
+
+# 用内置 token 提交回仓库，不需要配置任何密钥
+permissions:
+  contents: write
+
+concurrency:
+  group: build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+
+      - name: 安装 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # build.py 只用标准库，所以没有 pip install 这一步。
+      # 上游要装 requests，我们不用 —— 少一个依赖少一份麻烦。
+
+      - name: 更新快照
+        id: build
+        run: python scripts/build.py
+
+      # 把结果摘要写进 Actions 的 Summary 面板。
+      # 这样跑完之后在 Actions 页面上就能直接看到结果，
+      # 不用点进日志翻。
+      - name: 写入 Actions 摘要
+        if: always()
+        run: |
+          if [ ! -f status.json ]; then
+            echo "### 运行结果" >> "$GITHUB_STEP_SUMMARY"
+            echo "没有产出 status.json，这一步可能失败了。" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json, io
+          s = json.load(io.open("status.json", encoding="utf-8"))
+          c = s.get("counts", {})
+          sites = s.get("sites", {})
+          d = sites.get("dropped", {})
+          sp = s.get("spider", {}) or {}
+
+          print("### 运行结果")
+          print()
+          print(f"- **构建时间**：{s.get('built_at', '?')}")
+          print(f"- **上游源**：{c.get('live',0)} live · {c.get('cache',0)} cache · {c.get('down',0)} down")
+          print(f"- **站点**：{sites.get('total_input','?')} → {sites.get('kept','?')}")
+          print(f"- **spider**：{sp.get('source_id','?')}（{sp.get('class_count','?')} 个类）")
+          print()
+          print("| 剔除原因 | 数量 |")
+          print("| --- | --- |")
+          print(f"| api 的类不在 spider 的 jar 里 | {len(d.get('missing_class', []))} |")
+          print(f"| 命中 filter.json 规则 | {len(d.get('by_rule', []))} |")
+          print(f"| 同名重复 | {len(d.get('duplicate', []))} |")
+          print()
+          print("详细报告见仓库根目录的 `report.html`。")
+          PY
+
+      - name: 提交产物
+        run: |
+          # ══════════════════════════════════════════════════════════
+          # 先校验产物，再决定要不要提交。
+          #
+          # 为什么必须有这道闸：
+          #   build.py 只要【任意一个源抓成功】就返回 0 —— 哪怕一个站都没留下
+          #   （见 build.py 末尾：`return 0 if (live or cache) else 1`）。
+          #   极端情况下会产出"只有骨架、没有任何站点"的 config.json，而工作流
+          #   会把它当正常结果提交上去 → App 读到空配置 → 家里电视什么都搜不出来。
+          #
+          #   失败时【保留主分支上的旧配置】才是我们要的行为：jsDelivr 继续发
+          #   上一次成功那份，App 照常能用。宁可旧，不可空。
+          # ══════════════════════════════════════════════════════════
+          if [ ! -f config.json ]; then
+            echo "::error::没有产出 config.json，本次不提交（保留上一版配置）"
+            exit 1
+          fi
+          python - <<'PY'
+          import io, json, sys
+          # ⚠️ 必须显式 utf-8：runner 的默认编码不是 utf-8 时读中文会炸。
+          data = json.load(io.open("config.json", encoding="utf-8"))
+          n = len(data.get("sites") or [])
+          # 下限取得很宽松：正常产出 100+，本机最差一轮也还有 68。
+          # 设 10 是为了只拦"真出事了"，不误伤"今天源少"。
+          if n < 10:
+              print("::error::站点数异常（%d 个），拒绝提交，保留上一版配置" % n)
+              sys.exit(1)
+          print("站点数 %d，通过校验" % n)
+          PY
+
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # 三个产物在 .gitignore 里（仓库只留代码），所以必须 -f 强制加入。
+          # 不加 -f 的话 `git add -A` 会尊重 .gitignore、永不提交它们，
+          # jsDelivr 上就永远没有 config.json，App 直接读不到配置。
+          git add -f config.json status.json report.html
+          # 其余改动照常（主要是 filter.json 的 failure_streak 回写）
+          git add -A
+          if git diff --cached --quiet; then
+            echo "::notice::内容没有变化，跳过提交"
+          else
+            git commit -m "chore: 更新快照 $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+            git push origin main
+            echo "::notice::已提交并推送"
+          fi
+
+      # ────────────────────────────────────────────────────────────────
+      # 刷新 jsDelivr 缓存。这一步【不能省】。
+      #
+      # jsDelivr 对 @main 这种分支引用会缓存，最长 12 小时。不主动刷的话，
+      # 你这边改了配置，电视那边可能半天还拿到旧的那一份。
+      #
+      # 实测过：commit 之后大约 20 秒内，cdn / gcore / testingcf / fastly
+      # 四个节点会全部刷新（purge 会传播到所有节点）。
+      #
+      # purge.jsdelivr.net 是公开接口，不需要任何 token。
+      # 用 -f 让 4xx/5xx 直接失败，这样这一步红了能看见，不会静默成功。
+      # ────────────────────────────────────────────────────────────────
+      - name: 刷新 jsDelivr 缓存
+        if: always()
+        run: |
+          set -euo pipefail
+
+          purge_one() {
+            local target="$1"
+            echo "刷新: ${target}"
+            local resp
+            resp=$(curl -fsS -m 60 "${target}") || {
+              echo "  ⚠️ 这个地址刷新失败（可能是还没被缓存过，不算致命）"
+              return 0
+            }
+            echo "  ${resp}"
+          }
+
+          BASE="https://purge.jsdelivr.net/gh/${GITHUB_REPOSITORY}@main"
+
+          # 三个产物都刷一遍：config.json 是 App 要读的，另外两个是给人看的
+          purge_one "${BASE}/config.json"
+          purge_one "${BASE}/status.json"
+          purge_one "${BASE}/report.html"
+
+          echo "::notice::缓存刷新完成 —— 电视那边重开 App 就能拿到最新的"

@@ -1,0 +1,32 @@
+# ── 产物不入库，只由 CI 生成 ──────────────────────────────────
+#
+# config.json / status.json / report.html 是 build.py 的输出。
+# 仓库里【只留代码】：这三个文件由 Action 每天跑出来、再由 Action 提交，
+# 所以主分支上它们仍然存在，App 照样能从 jsDelivr 读到。
+#
+# 为什么不跟着代码一起 push：本地跑出来的那三份带着【本机网络的痕迹】——
+#   本机能抓到的源（3 个 live）和 GitHub 服务器能抓到的源（通常更多）不一样，
+#   拿本机结果当第一版等于把一份"缺源"的配置先发出去。
+#   CI 生成的那份才是真实产物。
+#
+# ⚠️ 因此工作流里必须用 `git add -f` 强制加入这三个文件，
+#    否则 `git add -A` 会尊重本文件、永不提交它们，jsDelivr 上就永远是空的。
+config.json
+status.json
+report.html
+
+# filter.json 不在此列，它是【输入 + 会被写回的状态】（failure_streak 累计），
+# 必须一直入库：不入库的话每次 CI 都从零开始，连续失败计数永远攒不起来。
+
+# 只忽略本地跑构建时可能留下的东西
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# 本地调试用的缓存目录（--cache-dir 指向它时）
+.cache/
+
+# 系统垃圾
+.DS_Store
+Thumbs.db
+desktop.ini
