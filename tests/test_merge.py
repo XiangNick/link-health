@@ -92,13 +92,13 @@ class MergeSitesTest(unittest.TestCase):
         用【名字规则】构造这种局面：甲源那份因为名字失效被砍，乙源那份同名同 key
         但名字干净 —— 正确的行为是留乙源那一份（seen 只记"真的留下了"的 key）。"""
         cohort = {}
-        c = dict(build.FILTER_DEFAULTS, blacklist_name_patterns=["失效"])
+        c = dict(build.FILTER_DEFAULTS, filter_name_patterns=["失效"])
         out = build.merge([
             fetch("a", payload([{"key": "k", "name": "接口失效", "api": "py_a"}])),
             fetch("b", payload([{"key": "k", "name": "好站", "api": "py_b"}])),
         ], None, c, cohort)
         self.assertEqual([s["name"] for s in out["sites"]], ["好站"])
-        self.assertEqual([d.reason for d in cohort["dropped"]], ["blacklist_name_patterns"])
+        self.assertEqual([d.reason for d in cohort["dropped"]], ["filter_name_patterns"])
 
     def test_sites_without_key_are_skipped(self):
         cohort = {}
@@ -117,7 +117,7 @@ class MergeSitesTest(unittest.TestCase):
         """每个站只能命中一个剔除原因：三组的数量相加必须正好等于被砍掉的站数，
         报告上"167 -> 87、砍掉 80"这几个数字才是自洽的。"""
         cohort = {}
-        c = dict(build.FILTER_DEFAULTS, blacklist_keys=["k1"])
+        c = dict(build.FILTER_DEFAULTS, filter_keys=["k1"])
         build.merge([
             fetch("a", payload([{"key": "k1", "api": "py_a"},
                                 {"key": "k2", "api": "csp_没有这个类"},
@@ -125,7 +125,9 @@ class MergeSitesTest(unittest.TestCase):
             fetch("b", payload([{"key": "k3", "api": "py_d"}])),
         ], {"AppRJ"}, c, cohort)
         reasons = sorted(d.reason for d in cohort["dropped"])
-        self.assertEqual(reasons, ["blacklist_keys", "duplicate", "missing_class"])
+        # 执行顺序：k1 命中 filter_keys → k2 类不在包里 → k3 在第二个源里重复。
+        # 这里排序后比较，所以是按字母序：duplicate < filter_keys < missing_class
+        self.assertEqual(reasons, ["duplicate", "filter_keys", "missing_class"])
 
     def test_base_scalar_fields_are_copied(self):
         """base（优先级最高的那份）里的普通字段要跟着走：
@@ -257,7 +259,7 @@ class MergeListFieldsTest(unittest.TestCase):
 class MergeCohortTest(unittest.TestCase):
     def test_cohort_counts(self):
         cohort = {}
-        c = dict(build.FILTER_DEFAULTS, blacklist_keys=["k2"])
+        c = dict(build.FILTER_DEFAULTS, filter_keys=["k2"])
         build.merge([
             fetch("a", payload([{"key": "k1", "api": "py_a"},
                                 {"key": "k2", "api": "py_b"}])),
@@ -279,7 +281,7 @@ class MergeCohortTest(unittest.TestCase):
 
     def test_total_input_counts_filtered_sites(self):
         cohort = {}
-        c = dict(build.FILTER_DEFAULTS, blacklist_keys=["k1"])
+        c = dict(build.FILTER_DEFAULTS, filter_keys=["k1"])
         build.merge([fetch("a", payload([{"key": "k1", "api": "py_a"},
                                          {"key": "k2", "api": "py_b"}]))],
                     None, c, cohort)

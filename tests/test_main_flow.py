@@ -6,7 +6,7 @@
     · fetched 到底是 3 元组还是 4 元组（草稿版就在这里崩了）；
     · config.json 里的 spider 是不是我们真正读 jar 的那一家；
     · 缓存源能不能当 spider 源（不能：缓存里的 jar 可能早就下线了）；
-    · failure_streak 会不会在"一个站都没拿到"时把历史计数抹掉。
+    · 脚本会不会往 filter.json 里写东西（★ 2026-10-03 起绝不允许，见 FilterJsonIsReadOnlyTest）。
   这些只有把 main 从头跑一遍才测得到。网络换成假的是必须的 ——
   真联网的版本在 tests/test_integration.py，默认跳过。
 """
@@ -229,7 +229,7 @@ class MainFlowTest(unittest.TestCase):
     def test_no_source_available_writes_nothing(self):
         """一个源都不可用：直接退出码 1，且【不动】任何产物 ——
         半份配置比没有配置危险得多。"""
-        self.sb.write_filter({"blacklist_keys": ["手工规则"]})
+        self.sb.write_filter({"filter_keys": ["手工规则"]})
         before = self.sb.read_filter()
         code, log = self.run_main(
             self.two_sources(),
@@ -251,49 +251,10 @@ class MainFlowTest(unittest.TestCase):
             self.texts(doc(a_sites), doc(py_sites(5, "b"), spider=SPIDER_B)),
             jar=jar)
 
-    def test_streak_accumulates_then_auto_blacklists(self):
-        """连续三次构建都"类不在包里" → 自动进黑名单。
-        这是跨天记忆的全部意义：一次抖动不算死，连着三天失败才算。"""
-        jar = H.jar_of_classes(["AppRJ"])
-        dead = [{"key": "死站", "name": "死站", "api": "csp_已经删掉的类"}]
-        for expected in (1, 2):
-            code, log = self._streak_run(dead, jar)
-            self.assertEqual(code, 0, log)
-            self.assertEqual(self.sb.read_filter()["failure_streak"], {"死站": expected})
-            self.assertNotIn("死站", self.sb.read_filter()["blacklist_keys"])
-        code, log = self._streak_run(dead, jar)
-        self.assertEqual(code, 0, log)
-        filt = self.sb.read_filter()
-        self.assertIn("死站", filt["blacklist_keys"])
-        self.assertNotIn("死站", filt["failure_streak"])
-        self.assertIn("自动加入黑名单", log)
-        self.assertEqual(len(self.sb.read_status()["auto_blacklisted"]), 1)
-
-    def test_success_clears_the_streak(self):
-        jar = H.jar_of_classes(["AppRJ"])
-        self.sb.write_filter(dict(build.FILTER_DEFAULTS, failure_streak={"a0": 2}))
-        code, log = self._streak_run([], jar)
-        self.assertEqual(code, 0, log)
-        self.assertEqual(self.sb.read_filter()["failure_streak"], {})
-
-    def test_streak_is_not_rewritten_when_nothing_came_back(self):
-        """【关键】所有源都返回空 sites 时不能写回 filter.json：
-        appeared 会是空集，写回去就把攒了几天的历史计数全抹掉，等于功能失效。"""
-        self.sb.write_filter(dict(build.FILTER_DEFAULTS, failure_streak={"老站": 2}))
-        with mock.patch.object(build, "validate", lambda data, min_sites=None: (True, None)):
-            code, log = self.run_main(
-                self.two_sources(),
-                self.texts('{"sites": [], "spider": "u"}', '{"sites": [], "spider": "u"}'))
-        self.assertEqual(code, 0, log)
-        self.assertEqual(self.sb.read_filter()["failure_streak"], {"老站": 2})
-        self.assertIn("跳过 filter.json", log)
-        # config.json 还是要产出（空配置也是一个确定的结论），但站点数是 0
-        self.assertEqual(self.sb.read_config()["sites"], [])
-
     # ── 5. 规则、去重、列表字段 ──
     def test_blacklist_rule_is_applied_and_reported(self):
-        filt = dict(build.FILTER_DEFAULTS, blacklist_keys=["a1"],
-                    blacklist_name_patterns=["失效"])
+        filt = dict(build.FILTER_DEFAULTS, filter_keys=["a1"],
+                    filter_name_patterns=["失效"])
         code, log = self.run_main(
             self.two_sources(),
             self.texts(doc(py_sites(6, "a") + [{"key": "名人", "name": "接口失效",
@@ -303,8 +264,8 @@ class MainFlowTest(unittest.TestCase):
         self.assertEqual(code, 0, log)
         dropped = self.sb.read_status()["sites"]["dropped"]["by_rule"]
         reasons = sorted((d["reason"], d["key"]) for d in dropped)
-        self.assertEqual(reasons, [("blacklist_keys", "a1"),
-                                   ("blacklist_name_patterns", "名人")])
+        self.assertEqual(reasons, [("filter_keys", "a1"),
+                                   ("filter_name_patterns", "名人")])
         names = [s["key"] for s in self.sb.read_config()["sites"]]
         self.assertNotIn("a1", names)
         self.assertNotIn("名人", names)
@@ -428,99 +389,134 @@ class MainFlowTest(unittest.TestCase):
         self.run_main({}, {}, args=("--demo",))
         self.assertEqual(first, self.sb.read_report())
 
-    # ── 8. home（首页默认站点）──
+    # ── 8. 产物里【不该】有 home 字段 ──
     #
-    # 为什么盯这个：不写 home 时 App 走 getSites().get(0)，实测是肥猫的
-    # 「📚┃儿童┃启蒙」（儿歌片库 + searchable=0），对老人是最差默认值。
-    # 这里最要紧的断言不是"home 等于某个值"，而是
-    # 【写进去的值必须真的在 sites 里】—— 写一个指不存在的 key 等于往产物里塞假配置。
-    def sources_with_home(self, *candidates, spider_source="A"):
-        d = self.two_sources(spider_source=spider_source)
-        d["home_candidates"] = list(candidates)
-        return d
-
-    def test_home_is_written_from_candidates_and_points_at_a_real_site(self):
-        """第一个候选不在、第二个在 —— 必须取第二个，且必须是 sites 里真实存在的 key。"""
+    # ★ 2026-10-03 起不再写 home。原因（在 App 源码 + 真机上核实过）：
+    #   App 决定首页是 VodConfig.java:288 的三级回退 —— ①用户在 App 里手动选过的
+    #   （存本地数据库）② 云端 config.json 的 home 字段 ③ getSites().get(0)。
+    #   而 VodConfig 读的 JSON 键是 logo/notice/danmaku/wallpaper/spider/sites/parses，
+    #   【没有 home】—— 写了也不生效。默认首页 = sites[0]，由 sources.json 源顺序决定。
+    def test_config_never_contains_home_field(self):
+        filt = dict(build.FILTER_DEFAULTS, home_candidates=["a3"])
         code, log = self.run_main(
-            self.sources_with_home("nosuchkey", "a3"),
+            dict(self.two_sources(), home_candidates=["a3"]),
             self.texts(doc(py_sites(6, "a")), doc(py_sites(5, "b"), spider=SPIDER_B)),
             jar=H.jar_of_classes(["AppRJ"]))
         self.assertEqual(code, 0, log)
         cfg = self.sb.read_config()
-        self.assertEqual(cfg["home"], "a3")
-        self.assertIn("a3", [s["key"] for s in cfg["sites"]])
-        self.assertIn("a3", log)
+        self.assertNotIn("home", cfg, "产物里不该再有 home 字段（App 不读它）")
+        # 默认首页是 sites[0]，由合并顺序决定 —— 这里第一条来自优先级最高的 A 源
+        self.assertEqual(cfg["sites"][0]["key"], "a0")
+        self.assertIn("不写 home", log)
 
-    def test_home_prefers_the_first_existing_candidate(self):
-        """顺序就是优先级：候选按 sources.json 写的顺序取第一个存在的。"""
-        code, log = self.run_main(
-            self.sources_with_home("b2", "a3"),
-            self.texts(doc(py_sites(6, "a")), doc(py_sites(5, "b"), spider=SPIDER_B)),
-            jar=H.jar_of_classes(["AppRJ"]))
-        self.assertEqual(code, 0, log)
-        self.assertEqual(self.sb.read_config()["home"], "b2")
 
-    def test_home_field_is_absent_when_no_candidate_survives(self):
-        """候选全落空时【不能写这个字段】：留着 App 自己回退第一条，行为可解释。"""
-        code, log = self.run_main(
-            self.sources_with_home("nosuchkey"),
-            self.texts(doc(py_sites(6, "a")), doc(py_sites(5, "b"), spider=SPIDER_B)),
-            jar=H.jar_of_classes(["AppRJ"]))
-        self.assertEqual(code, 0, log)
-        cfg = self.sb.read_config()
-        self.assertNotIn("home", cfg)
-        self.assertEqual(len(cfg["sites"]), 11)
-        self.assertEqual(self.sb.read_status()["home"]["key"], "")
+class FilterJsonIsReadOnlyTest(unittest.TestCase):
+    """★ 本文件最要紧的一条不变式：脚本【绝不】写 filter.json。
 
-    def test_home_ignores_a_candidate_that_was_filtered_out(self):
-        """被规则/类存在性筛掉的站不能当首页 —— 它压根不在产物里。
+    历史教训（2026-10-03 真机踩出来的）：上一版会把"类不存在"连续 3 次的站
+    自动追加进 filter.json 的 blacklist_keys。而黑名单优先级(第2)高于类校验(第6)，
+    一旦写进去，那个站再也不会被重新评估 —— 换回对的 jar 也永远出不来。
+    实测被这样永久误杀 38 个好站。
 
-        夹具两个坑，写的时候都踩过：
-          · py_sites 默认 api="py_demo"，class_name_of 返回 None（走别的加载器、
-            判不了），永远不会被 missing_class 剔掉 —— 想"剔掉"必须用 csp_ 前缀；
-          · start 不能撞 key。{"key": "a1", csp_} 和 py_sites(start=1) 的第一个
-            都是 a1：csp 那个被剔掉后，py_demo 那个同 key 反而能补位进来，
-            于是"a1 被剔掉"这个前提静默失效，用例变成假通过。
+    所以这里钉死：跑完构建，filter.json 的内容必须与构建前【逐字节相同】。
+    """
+
+    def setUp(self):
+        self._sb_cm = H.sandbox()
+        self.sb = self._sb_cm.__enter__()
+        self.addCleanup(lambda: self._sb_cm.__exit__(None, None, None))
+        self._time = H.fast_time()
+        self._time.__enter__()
+        self.addCleanup(lambda: self._time.__exit__(None, None, None))
+
+    def test_default_filter_keys_all_take_effect(self):
+        """★ 仓库里那份 filter.json 的 filter_keys，每一条都必须真的把对应站点挡掉。
+
+        为什么单独测这个：2026-10-03 重构时我差点把其中 5 条（央视经典/py_cctv_少儿/
+        csp_wogg1/csp_woog2/豆瓣1）漏掉 —— 它们混在 67 条历史黑名单里，
+        不逐条核验根本看不出来。漏了就等于那几个站会出现在电视上。
         """
-        code, log = self.run_main(
-            self.sources_with_home("a1", "b2"),
-            self.texts(doc([{"key": "a1", "name": "甲1", "api": "csp_NotInJar"}] +
-                           py_sites(5, "a", start=2)),
-                       doc(py_sites(5, "b"), spider=SPIDER_B)),
-            jar=H.jar_of_classes(["AppRJ"]))
-        self.assertEqual(code, 0, log)
-        cfg = self.sb.read_config()
-        self.assertEqual(cfg["home"], "b2")
-        self.assertNotIn("a1", [s["key"] for s in cfg["sites"]])
-        # 先确认它确实是被 missing_class 剔的，而不是被去重之类别的路径吃掉 ——
-        # 否则这个用例会在"a1 恰好因为别的原因不在"时假装通过。
-        self.assertEqual([d["key"] for d in
-                          self.sb.read_status()["sites"]["dropped"]["missing_class"]], ["a1"])
+        real = build.load_filter(os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "config", "filter.json"))
+        keys = real.get("filter_keys") or []
+        self.assertTrue(keys, "config/filter.json 的 filter_keys 不该是空的")
 
+        for key in keys:
+            site = {"key": key, "name": "某个名字", "api": "py_x"}
+            keep, reason, _m = build.filter_site(
+                site, key=key, name=site["name"], api=site["api"],
+                spider_classes={"AppRJ"}, cfg=real)
+            self.assertFalse(keep, "filter_keys 里的 %r 没生效" % key)
+            self.assertEqual(reason, "filter_keys")
 
-class ChooseHomeUnitTest(unittest.TestCase):
-    """choose_home 的边界（不跑 main，直接喂数据）。"""
+        # 教育类那 4 条必须是"类存在、只有靠 filter_keys 才挡得住"的
+        for edu in ("csp_少儿", "csp_小学", "csp_初中", "csp_高中"):
+            self.assertIn(edu, keys, "教育类 %s 必须留在 filter_keys 里" % edu)
 
-    def test_empty_candidates_returns_empty(self):
-        key, note = build.choose_home([{"key": "a"}], [])
-        self.assertEqual(key, "")
-        self.assertIn("第一条", note)
+    def test_whitelist_beats_filter_keys(self):
+        """白名单优先级最高：同时在两个列表里时必须保留（否则"后悔药"是假的）。"""
+        c = dict(build.FILTER_DEFAULTS,
+                 filter_keys=["k"], whitelist_keys=["k"])
+        keep, reason, _ = build.filter_site(
+            {"key": "k", "name": "n", "api": "py_x"},
+            key="k", name="n", api="py_x", spider_classes=set(), cfg=c)
+        self.assertTrue(keep)
+        self.assertIsNone(reason)
 
-    def test_none_kept_sites_does_not_crash(self):
-        """一个站都没留下时（其余源全挂）不能 AttributeError。"""
-        key, note = build.choose_home([], ["a"])
-        self.assertEqual(key, "")
-        self.assertIn("第一条", note)
+    def test_filter_json_is_byte_identical_after_a_build(self):
+        filt = dict(build.FILTER_DEFAULTS,
+                    filter_keys=["手工规则"],
+                    filter_name_patterns=["失效"])
+        self.sb.write_filter(filt)
+        self.sb.write_sources({
+            "spider_source": "A",
+            "sources": [
+                {"id": "A", "name": "甲源", "urls": ["http://a/1.json"]},
+                {"id": "B", "name": "乙源", "urls": ["http://b/1.json"]},
+            ],
+        })
+        before = open(self.sb.filter, "rb").read()
 
-    def test_skips_non_dict_and_blank_entries(self):
-        kept = [None, "x", {"key": "  "}, {"name": "没有key"}, {"key": "  a "}]
-        key, _note = build.choose_home(kept, ["nothing", "a"])
-        self.assertEqual(key, "a", "key 两边的空白要 strip 后再比")
+        net = H.FakeNet(
+            {"http://a/1.json": doc(py_sites(6, "a") + [{"key": "坏站", "api": "csp_没有的类"}]),
+             "http://b/1.json": doc(py_sites(5, "b"), spider=SPIDER_B)},
+            H.jar_of_classes(["AppRJ"]))
+        with mock.patch.object(build, "fetch_text", net.fetch_text), \
+                mock.patch.object(build, "fetch_bytes", net.fetch_bytes), \
+                H.argv(), H.capture_stdout():
+            code = build.main()
 
-    def test_candidate_matching_is_case_sensitive(self):
-        """key 是 App 用来 filter 的原始字符串，不能自作主张改大小写。"""
-        key, _note = build.choose_home([{"key": "SNZY"}], ["snzy"])
-        self.assertEqual(key, "")
+        self.assertEqual(code, 0)
+        after = open(self.sb.filter, "rb").read()
+        self.assertEqual(before, after, "脚本不能写 filter.json")
+        # 被类校验剔掉的站，绝不能因此进 filter_keys
+        self.assertNotIn("坏站", json.loads(after.decode("utf-8"))["filter_keys"])
+
+    def test_filter_json_untouched_even_when_repeated(self):
+        """连跑三次（旧机制下第 3 次会触发自动拉黑），filter.json 仍必须原样。"""
+        self.sb.write_filter(dict(build.FILTER_DEFAULTS, filter_keys=["手工规则"]))
+        self.sb.write_sources({
+            "spider_source": "A",
+            "sources": [
+                {"id": "A", "name": "甲源", "urls": ["http://a/1.json"]},
+                {"id": "B", "name": "乙源", "urls": ["http://b/1.json"]},
+            ],
+        })
+        before = open(self.sb.filter, "rb").read()
+        dead = [{"key": "死站", "name": "死站", "api": "csp_已经删掉的类"}]
+        for _ in range(3):
+            net = H.FakeNet(
+                {"http://a/1.json": doc(py_sites(6, "a") + dead),
+                 "http://b/1.json": doc(py_sites(5, "b"), spider=SPIDER_B)},
+                H.jar_of_classes(["AppRJ"]))
+            with mock.patch.object(build, "fetch_text", net.fetch_text), \
+                    mock.patch.object(build, "fetch_bytes", net.fetch_bytes), \
+                    H.argv(), H.capture_stdout():
+                build.main()
+        self.assertEqual(before, open(self.sb.filter, "rb").read())
+        self.assertNotIn("死站", json.loads(
+            open(self.sb.filter, encoding="utf-8").read())["filter_keys"])
 
 
 if __name__ == "__main__":

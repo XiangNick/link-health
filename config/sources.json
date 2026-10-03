@@ -2,14 +2,7 @@
   "_说明": "上游源清单。spider_source 指定用哪个源的 jar —— 必须显式指定，不能依赖抓取顺序，否则 jar 一换，静态筛的结果全变。",
   "spider_source": "feimao",
   "_spider_source为什么选肥猫而不是王二小（2026-10-03 改）": "★ 这是唯一一次【不是按站点数】做的选择，理由是真机崩溃。实测：王二小的 jar（290 类）能留 87 站，肥猫的 jar（512 类）只能留 30 站 —— 按站点数该选王二小（原决策就是这么定的）。但 2026-10-03 在电视（MediaTek DBD6X Pro / Android 9 SDK28）真机实测：王二小那个 jar 里带原生保护壳（assets/wexguard_v7.so + wexguard_v8.so + wexshinidie.guard，dex 里 com.github.catvod.spider.DexNative.<clinit> 会按 Build.CPU_ABI 把 .so 落盘到 cacheDir 再 System.load），加载失败：java.lang.UnsatisfiedLinkError: dlopen failed: \".../.libwexproxy…\" has bad ELF magic → App 启动即崩、点关闭后全废。而 DexNative.<clinit> 是在 Init.getSpider(api) 第一次调用时触发的 —— 创建【任何】csp_ 站都会触发，所以【剔站绕不过去】。肥猫那个 jar 是纯 Java（zip 里只有 classes.dex + META-INF + assets/push.html，0 个 .so，dex 里 wexguard/CPU_ABI 零引用），不会触发。结论：宁要 30 个能用的站，不要 87 个一开就崩的站。想换回去改这一行即可，但换回去就必须解决那个 .so 的加载问题。",
-  "home_candidates": [
-    "snzy",
-    "lzzy",
-    "gszy",
-    "豪华资源"
-  ],
-  "_home_candidates是什么": "写入产物 config.json 的 home 字段（App 启动后默认打开的首页站点 key），【按顺序取第一个真实存在的】。不写这个字段的话，App 会退回 sites 的第一条 —— 实测是肥猫的「📚┃儿童┃启蒙」（儿歌片库且 searchable=0），对老人是最差的默认。这里【故意不改造成自动打分择优】：那会让首页每天在几个站之间跳。下面 4 个是 2026-10-03 本机对 type=1 站实测评分的前 4 名（片库页数 / 分类数 / 主类覆盖），snzy 以 7286 页 + 61 分类 + 6/6 覆盖排第一，且 0.8 小时前刚更新过。全部落空时不写 home 字段（App 自己回退），绝不硬写一个指不存在的 key。",
-  "_优先级": "sources 的顺序 = 优先级；合并时同名 site 保留先出现的那个。",
+  "_优先级": "sources 的顺序 = 优先级；合并时同名 site 保留先出现的那个。这个顺序还决定默认首页：第一个源里第一个被保留的站就是 sites[0]（产物不再写 home 字段，App 不读它）。",
   "sources": [
     {
       "id": "feimao",

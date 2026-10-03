@@ -63,9 +63,9 @@ class BuildDemoCtxTest(unittest.TestCase):
 
     def test_every_drop_has_a_known_reason(self):
         for d in build.build_demo_ctx()["dropped_all"]:
-            self.assertIn(d.reason, ("missing_class", "duplicate", "blacklist_keys",
-                                     "blacklist_name_patterns", "blacklist_api_families",
-                                     "blacklist_hosts"))
+            self.assertIn(d.reason, ("missing_class", "duplicate", "filter_keys",
+                                     "filter_name_patterns", "filter_api_prefixes",
+                                     "filter_hosts"))
 
     def test_spider_is_the_designated_source(self):
         c = build.build_demo_ctx()
@@ -108,151 +108,12 @@ class LoadPrevStatusTest(unittest.TestCase):
 def cohort(kept=(), failed=(), others=()):
     """造一个 merge() 风格的 cohort。"""
     drops = [build.Drop(k, "", "", "missing_class", matched="C") for k in failed]
-    drops += [build.Drop(k, "", "", "blacklist_keys") for k in others]
+    drops += [build.Drop(k, "", "", "filter_keys") for k in others]
     return {"kept": [{"key": k} for k in kept], "dropped": drops}
 
 
-class UpdateFailureStreakTest(unittest.TestCase):
-    def test_failure_increments(self):
-        cfg = dict(build.FILTER_DEFAULTS, failure_streak={"k1": 1})
-        cfg, added = build.update_failure_streak(cfg, cohort(failed=["k1"]))
-        self.assertEqual(cfg["failure_streak"], {"k1": 2})
-        self.assertEqual(added, [])
-
-    def test_success_resets_and_removes_the_key(self):
-        """这次成功 = 计数清零（键要删掉）：留着 0 会让"连续"这个语义变糊，
-        也会让 filter.json 越写越长。"""
-        cfg = dict(build.FILTER_DEFAULTS, failure_streak={"k1": 2})
-        cfg, _ = build.update_failure_streak(cfg, cohort(kept=["k1"]))
-        self.assertEqual(cfg["failure_streak"], {})
-
-    def test_missing_key_forgets_history(self):
-        """这次压根没出现在输入里的 key 要清掉：连续指的是"连续 N 次出现且都失败"，
-        一个站从上游消失了就不该继续背着历史计数（否则它哪天回来会直接被黑）。"""
-        cfg = dict(build.FILTER_DEFAULTS, failure_streak={"早已消失": 5})
-        cfg, _ = build.update_failure_streak(cfg, cohort(kept=["别的站"]))
-        self.assertEqual(cfg["failure_streak"], {})
-
-    def test_reaching_threshold_auto_blacklists(self):
-        cfg = dict(build.FILTER_DEFAULTS, failure_streak={"k1": 2},
-                   blacklist_after_streak=3)
-        cfg, added = build.update_failure_streak(cfg, cohort(failed=["k1"]))
-        self.assertIn("k1", cfg["blacklist_keys"])
-        self.assertEqual(len(added), 1)
-        self.assertIn("连续 3 次", added[0])
-
-    def test_below_threshold_is_not_blacklisted(self):
-        cfg = dict(build.FILTER_DEFAULTS, failure_streak={"k1": 1},
-                   blacklist_after_streak=3)
-        cfg, added = build.update_failure_streak(cfg, cohort(failed=["k1"]))
-        self.assertNotIn("k1", cfg["blacklist_keys"])
-        self.assertEqual(added, [])
-
-    def test_blacklisted_key_is_removed_from_streak(self):
-        """进了黑名单就从 streak 里摘掉：否则计数会一直涨，日志里天天刷同一条。"""
-        cfg = dict(build.FILTER_DEFAULTS, failure_streak={"k1": 5},
-                   blacklist_after_streak=3)
-        cfg, _ = build.update_failure_streak(cfg, cohort(failed=["k1"]))
-        self.assertNotIn("k1", cfg["failure_streak"])
-
-    def test_already_blacklisted_is_not_reported_again(self):
-        cfg = dict(build.FILTER_DEFAULTS, blacklist_keys=["k1"],
-                   failure_streak={"k1": 9}, blacklist_after_streak=3)
-        cfg, added = build.update_failure_streak(cfg, cohort(failed=["k1"]))
-        self.assertEqual(added, [])
-        self.assertEqual(cfg["blacklist_keys"], ["k1"])
-
-    def test_existing_blacklist_is_preserved(self):
-        cfg = dict(build.FILTER_DEFAULTS, blacklist_keys=["手工加的"])
-        cfg, _ = build.update_failure_streak(cfg, cohort(kept=["k"]))
-        self.assertEqual(cfg["blacklist_keys"], ["手工加的"])
-
-    def test_non_missing_class_drops_do_not_count_as_failure(self):
-        """只有 missing_class 才算"必然跑不了"。命中手工规则的站不算失败 ——
-        把规则命中也算进去，会让一批"被人为砍掉的好站"慢慢被自动拉黑，越滚越黑。"""
-        cfg = dict(build.FILTER_DEFAULTS, blacklist_after_streak=1)
-        cfg, added = build.update_failure_streak(cfg, cohort(others=["被规则砍的"]))
-        self.assertEqual(cfg["failure_streak"], {})
-        self.assertEqual(added, [])
-
-    def test_threshold_is_configurable(self):
-        cfg = dict(build.FILTER_DEFAULTS, blacklist_after_streak=1)
-        cfg, added = build.update_failure_streak(cfg, cohort(failed=["k1"]))
-        self.assertIn("k1", cfg["blacklist_keys"])
-        self.assertEqual(len(added), 1)
-
-    def test_invalid_threshold_does_not_crash_the_build(self):
-        """filter.json 是手工维护的文件：阈值被写成 "3次" / 数组 / 字典时，
-        不能 int() 抛 ValueError 把整条流水线弄红 —— 按默认值 3 继续跑就行。"""
-        for bad in ("abc", [], {}, "三"):
-            cfg = dict(build.FILTER_DEFAULTS, failure_streak={"k": 1},
-                       blacklist_after_streak=bad)
-            cfg, _ = build.update_failure_streak(cfg, cohort(failed=["k"]))
-            self.assertNotIn("k", cfg["blacklist_keys"], bad)
-
-    def test_zero_or_missing_threshold_falls_back_to_default(self):
-        """0 和 None 按"没填"处理：`0 or 3` 这类写法不能让人以为 0 是"立刻拉黑"。"""
-        for bad in (0, None):
-            cfg = dict(build.FILTER_DEFAULTS, failure_streak={"k": 1},
-                       blacklist_after_streak=bad)
-            cfg, _ = build.update_failure_streak(cfg, cohort(failed=["k"]))
-            self.assertNotIn("k", cfg["blacklist_keys"], bad)
-
-    def test_negative_threshold_falls_back_to_one(self):
-        cfg = dict(build.FILTER_DEFAULTS, failure_streak={"k": 1},
-                   blacklist_after_streak=-3)
-        cfg, _ = build.update_failure_streak(cfg, cohort(failed=["k"]))
-        self.assertIn("k", cfg["blacklist_keys"])
-
-    def test_auto_added_keys_are_sorted(self):
-        """自动拉黑的顺序要可复现（按名字排序），否则 filter.json 每天 diff 一片。"""
-        cfg = dict(build.FILTER_DEFAULTS, failure_streak={"z": 5, "a": 5, "m": 5},
-                   blacklist_after_streak=3)
-        cfg, added = build.update_failure_streak(cfg, cohort(failed=["z", "a", "m"]))
-        self.assertEqual(cfg["blacklist_keys"], ["a", "m", "z"])
-        self.assertEqual([x.split("（")[0] for x in added], ["a", "m", "z"])
-
-    def test_empty_cohort_wipes_history(self):
-        """【这就是 main 里那句 `if kept or dropped_all:` 的存在理由】
-        空 cohort 会把 appeared 变成空集，历史计数被一口气抹掉 ——
-        哪天所有源都返回空 sites，几天的"连续失败"记忆就白攒了。
-        所以调用方必须自己把这种情况挡住（见 test_main_flow 里对应的用例）。"""
-        cfg = dict(build.FILTER_DEFAULTS, failure_streak={"k1": 4, "k2": 4})
-        cfg, _ = build.update_failure_streak(cfg, {"kept": [], "dropped": []})
-        self.assertEqual(cfg["failure_streak"], {})
-
-    def test_uses_kept_sites_not_the_kept_count(self):
-        """回归：merge() 产出的 cohort 里 cohort["kept"] 是【数量】，
-        站点列表在 cohort["kept_sites"]。早先这里直接遍历数量，
-        一跑就是 TypeError: 'int' object is not iterable —— 而且是在
-        写完 config.json 之后、写 filter.json 之前崩，构建整条变红。"""
-        merged_style = {"kept": 1, "kept_sites": [{"key": "k1"}],
-                        "dropped": [build.Drop("k2", "", "", "missing_class")]}
-        cfg = dict(build.FILTER_DEFAULTS, failure_streak={"k1": 3, "k2": 1})
-        cfg, _ = build.update_failure_streak(cfg, merged_style)
-        self.assertEqual(cfg["failure_streak"], {"k2": 2})
-
-    def test_tolerates_cohort_without_kept_sites(self):
-        """只给了 dropped 的 cohort（没有站点列表）也不能崩。"""
-        cfg = dict(build.FILTER_DEFAULTS, failure_streak={"k": 1})
-        cfg, _ = build.update_failure_streak(
-            cfg, {"kept": 0, "dropped": [build.Drop("k", "", "", "missing_class")]})
-        self.assertEqual(cfg["failure_streak"], {"k": 2})
-
-    def test_other_fields_are_untouched(self):
-        cfg = dict(build.FILTER_DEFAULTS, blacklist_name_patterns=["失效"], _注释="x")
-        cfg, _ = build.update_failure_streak(cfg, cohort(failed=["k"]))
-        self.assertEqual(cfg["blacklist_name_patterns"], ["失效"])
-        self.assertEqual(cfg["_注释"], "x")
-
-    def test_does_not_mutate_filter_defaults(self):
-        cfg = dict(build.FILTER_DEFAULTS)
-        build.update_failure_streak(cfg, cohort(failed=["k"], kept=["j"]))
-        self.assertEqual(build.FILTER_DEFAULTS["failure_streak"], {})
-        self.assertEqual(build.FILTER_DEFAULTS["blacklist_keys"], [])
-
-
 def status_doc(**kw):
+    """造一份 status.json 的样例（build_ctx_from_status 的输入）。"""
     doc = {
         "built_at": "2026-10-03 15:20:07",
         "build_no": 3,

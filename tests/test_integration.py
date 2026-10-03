@@ -216,8 +216,8 @@ class IntegrationTest(unittest.TestCase):
         self.say("| 原因 | 数量 |")
         self.say("| --- | --- |")
         self.say("| 类不在 jar 里 | %d |" % len(d["missing_class"]))
-        for reason in ("blacklist_keys", "blacklist_name_patterns",
-                       "blacklist_api_families", "blacklist_hosts"):
+        for reason in ("filter_keys", "filter_name_patterns",
+                       "filter_api_prefixes", "filter_hosts"):
             n = len([x for x in by_rule if x["reason"] == reason])
             self.say("| 规则：%s | %d |" % (reason, n))
         self.say("| 同名重复 | %d |" % len(d["duplicate"]))
@@ -344,7 +344,7 @@ class IntegrationTest(unittest.TestCase):
              lambda i: "保留了 `%s` 的那一份" % (i.get("kept_from") or "?"))
         def rule_reason(item):
             reason = item.get("reason")
-            if reason == "blacklist_keys":
+            if reason == "filter_keys":
                 return "`%s`：这个 key 在手工黑名单里" % item.get("key")
             return "`%s` · 命中 `%s`" % (reason, item.get("matched") or "")
 

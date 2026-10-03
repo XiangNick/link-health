@@ -264,7 +264,7 @@ class BuildFragmentsContentTest(unittest.TestCase):
     def test_dropped_items_are_escaped_once_only(self):
         """第三列的所有实现内部都自己做 esc，li() 不能再转一次 ——
         转两次页面上就会显示成 &lt; 这种字面量。"""
-        d = build.Drop("关键<b>", "名字>", "csp_X", "blacklist_name_patterns", matched="<i>")
+        d = build.Drop("关键<b>", "名字>", "csp_X", "filter_name_patterns", matched="<i>")
         html = build.build_fragments(ctx(dropped_all=[d]))["dropped_by_rule"]
         self.assertIn("名字命中「&lt;i&gt;」", html)
         self.assertNotIn("&amp;lt;", html)
@@ -280,16 +280,16 @@ class BuildFragmentsContentTest(unittest.TestCase):
     def test_rule_reason_texts_differ_by_reason(self):
         """报告要能一眼看出是哪种规则命中的，所以四种理由的文案必须分开写。"""
         drops = [
-            build.Drop("a", "n", "", "blacklist_keys"),
-            build.Drop("b", "n", "", "blacklist_name_patterns", matched="失效"),
-            build.Drop("c", "n", "", "blacklist_api_families", matched="csp_Wex"),
-            build.Drop("d", "n", "", "blacklist_hosts", matched="nxog.eu.org"),
+            build.Drop("a", "n", "", "filter_keys"),
+            build.Drop("b", "n", "", "filter_name_patterns", matched="失效"),
+            build.Drop("c", "n", "", "filter_api_prefixes", matched="csp_Wex"),
+            build.Drop("d", "n", "", "filter_hosts", matched="nxog.eu.org"),
         ]
         html = build.build_fragments(ctx(dropped_all=drops))["dropped_by_rule"]
-        self.assertIn("key 拉黑", html)
+        self.assertIn("按 key 过滤", html)
         self.assertIn("名字命中「失效」", html)
-        self.assertIn("整族拉黑：csp_Wex", html)
-        self.assertIn("网址拉黑：nxog.eu.org", html)
+        self.assertIn("按 api 前缀过滤：csp_Wex", html)
+        self.assertIn("按域名过滤：nxog.eu.org", html)
 
     def test_duplicate_reason_names_the_winner(self):
         d = build.Drop("k", "推送", "", "duplicate", kept_from="肥猫", dropped_from="王二小")
@@ -306,7 +306,7 @@ class BuildFragmentsContentTest(unittest.TestCase):
 
     def test_group_counts_and_total(self):
         g1 = [build.Drop("a", "", "csp_X", "missing_class", matched="X", family="csp_X")]
-        g2 = [build.Drop("b", "", "", "blacklist_keys")]
+        g2 = [build.Drop("b", "", "", "filter_keys")]
         g3 = [build.Drop("c", "", "", "duplicate", kept_from="A", dropped_from="B")]
         frag = build.build_fragments(ctx(dropped_all=g1 + g2 + g3, duplicates=g3))
         self.assertEqual(frag["drop_g1_count"], "1")
@@ -326,7 +326,7 @@ class BuildFragmentsContentTest(unittest.TestCase):
 
     def test_only_missing_class_feeds_the_chart(self):
         """规则命中 / 同名重复没有 api 家族，混进柱状图会出现一条没有名字的柱子。"""
-        drops = [build.Drop("b", "", "", "blacklist_keys"),
+        drops = [build.Drop("b", "", "", "filter_keys"),
                  build.Drop("c", "", "", "duplicate", kept_from="A", dropped_from="B")]
         frag = build.build_fragments(ctx(dropped_all=drops, duplicates=[drops[1]]))
         self.assertEqual(frag["chart_bars"], "")

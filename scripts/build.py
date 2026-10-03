@@ -17,8 +17,8 @@ build.py —— 外部来源快照构建器
                                               并把本次成功的结果写回该目录（滚动缓存）
 
 输入（仓库里手工维护的文件）：
-    config/sources.json    上游源清单 + 【显式指定谁提供 spider】+ 首页候选（home_candidates）
-    config/filter.json     五类过滤规则 + 连续失败计数（脚本会写回它）
+    config/sources.json    上游源清单 + 【显式指定谁提供 spider】
+    config/filter.json     每轮实时生效的过滤规则（脚本只读【不写】）
 
 输出（脚本生成，不要手改）：
     config.json     给 App 读的聚合单仓（spider + home + sites + warningText/合并字段）
@@ -434,20 +434,33 @@ def class_name_of(api: str):
 # 四、过滤规则（config/filter.json）
 # ════════════════════════════════════════════════════════════
 
-# filter.json 应有的全部字段 + 默认值。
-# 为什么要这份默认表：Action 每天会用脚本跑，filter.json 是会被【写回】的文件。
-# 如果某个同事手工编辑时删掉了一个键，脚本不能因此崩，而要按默认值继续跑。
+# filter.json 的字段 + 默认值。
+#
+# ★ 2026-10-03 重构：这个文件从"记录被剔除过谁"改成"每轮实时跑的规则"。
+#   · 脚本【只读不写】—— 上一版会写回 failure_streak / blacklist_keys（连续失败自动拉黑），
+#     结果是名单只增不减：一次用错 jar 判定的 missing_class 连续 3 次就永久进黑名单，
+#     而黑名单优先级高于类校验 → 换回对的 jar 也永远出不来（实测 38 个好站被这样误杀）。
+#   · 类存在性是【当轮 jar 的函数】，每轮现下现读，不需要也不应该被记录下来。
+#
+# 字段名从 blacklist_* 改成 filter_*（语义：规则，不是名单）。
+# 旧的 blacklist_* 名字仍然兼容读取（见 _FIELD_ALIASES），这样推送瞬间不会读到空规则。
 FILTER_DEFAULTS = {
-    "blacklist_keys": [],
-    "blacklist_name_patterns": [],
-    "blacklist_api_families": [],
-    "blacklist_hosts": [],
+    "filter_keys": [],
+    "filter_name_patterns": [],
+    "filter_api_prefixes": [],
+    "filter_hosts": [],
     "whitelist_keys": [],
-    "failure_streak": {},
-    "blacklist_after_streak": 3,
     "only_sources": [],
-    "probe_keyword": "庆余年",
 }
+
+# 旧字段名 → 新字段名。只为兼容：同事手里的旧 filter.json 还能读。
+_FIELD_ALIASES = {
+    "blacklist_keys": "filter_keys",
+    "blacklist_name_patterns": "filter_name_patterns",
+    "blacklist_api_families": "filter_api_prefixes",
+    "blacklist_hosts": "filter_hosts",
+}
+
 
 HOST_RE = re.compile(r"https?://[^\s\"'<>()\[\]{},;|\\]+", re.I)
 
@@ -458,6 +471,9 @@ def load_filter(path=None):
     path 用 None 而不是直接把 FILTER_FILE 写成默认值：默认值是在 def 时求值的，
     写成默认值以后，测试（或任何想换目录跑的调用方）改 build.FILTER_FILE 就没用了，
     会一边"以为在跑沙箱"、一边把仓库里真正的 filter.json 写掉。
+
+    ★ 同时接受旧字段名（blacklist_keys 等），见 _FIELD_ALIASES。
+    ★ 只读，不写。这个文件完全由人维护（见模块顶部 FILTER_DEFAULTS 的说明）。
     """
     path = path or FILTER_FILE
     cfg = dict((k, (dict(v) if isinstance(v, dict) else list(v) if isinstance(v, list) else v))
@@ -467,39 +483,20 @@ def load_filter(path=None):
             with open(path, encoding="utf-8") as f:
                 raw = json.load(f)
             if isinstance(raw, dict):
+                # 新名字优先；只有在新名字缺席时才吃旧名字
+                for old, new in _FIELD_ALIASES.items():
+                    if new not in raw and old in raw and raw[old] is not None:
+                        raw[new] = raw[old]
                 for k in FILTER_DEFAULTS:
                     if k in raw and raw[k] is not None:
                         cfg[k] = raw[k]
-                # 下划线开头的是给人看的注释字段，原样带回去，写回时不会丢
+                # 下划线开头的是给人看的说明字段，原样带回（现在脚本不写盘，带回来只是为了报告/调试）
                 for k, v in raw.items():
                     if k.startswith("_") and k not in cfg:
                         cfg[k] = v
         except Exception as e:
             print(f"[WARN] filter.json 解析失败（{e}），按默认规则继续")
     return cfg
-
-
-def save_filter(cfg, path=None):
-    """把更新后的规则写回 filter.json（重点是 failure_streak）。
-
-    只改我们负责的那几个键，其余原样保留 —— 因为 filter.json 里还有同事手工维护的
-    黑名单/白名单和注释字段，脚本不能把它们覆盖掉。
-
-    path 为 None 时才回落到 FILTER_FILE（理由同 load_filter：默认值在 def 时就定死了）。
-    """
-    path = path or FILTER_FILE
-    out = {}
-    for k, v in cfg.items():
-        if k in FILTER_DEFAULTS:
-            out[k] = v
-        elif k.startswith("_"):
-            out[k] = v      # 注释字段排在后面
-    # 让人手工维护的规则排在前面，脚本维护的 failure_streak 放最后
-    ordered = {k: out[k] for k in FILTER_DEFAULTS if k in out}
-    ordered.update({k: v for k, v in out.items() if k not in ordered})
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(ordered, f, ensure_ascii=False, indent=2)
-        f.write("\n")
 
 
 def extract_hosts(site) -> set:
@@ -587,12 +584,16 @@ def filter_site(site, *, key, name, api, spider_classes, cfg):
 
     优先级（顺序不能改，否则"白名单无条件保留"会被别的规则推翻）：
       1 白名单 key                        → 无条件保留
-      2 黑名单 key                        → blacklist_keys
-      3 名字命中任何黑名单正则（记下哪一个）→ blacklist_name_patterns
-      4 api 以任何黑名单 api 家族开头      → blacklist_api_families
-      5 api / ext 里的 host 命中黑名单     → blacklist_hosts
+      2 key 在 filter_keys                → filter_keys
+      3 名字命中任何过滤正则（记下哪一个）  → filter_name_patterns
+      4 api 以任何过滤前缀开头             → filter_api_prefixes
+      5 api / ext 里的 host 命中过滤域名   → filter_hosts
       6 没有自带 jar 且 api 以 csp_ 开头，类不在 spider 的 jar 里 → missing_class
       7 其余                              → 保留
+
+    ★ 前 5 条是【人写的规则】（filter.json），第 6 条是【当轮 jar 的函数】。
+      第 6 条永远实时算、绝不被记录成规则 —— 踩过的坑：把一次判定的 missing_class
+      写进 filter_keys，换回对的 jar 之后那些站也再不会出现。
 
     第 6 条的两个前提都不能省：
       · site 自带了 jar：那它加载的是自己那个 jar 里的类，不能拿 spider 的类清单去判；
@@ -601,29 +602,29 @@ def filter_site(site, *, key, name, api, spider_classes, cfg):
     if key in set(cfg.get("whitelist_keys") or []):
         return True, None, ""
 
-    if key in set(cfg.get("blacklist_keys") or []):
-        return False, "blacklist_keys", ""
+    if key in set(cfg.get("filter_keys") or []):
+        return False, "filter_keys", ""
 
     if name:
-        for pat in cfg.get("blacklist_name_patterns") or []:
+        for pat in cfg.get("filter_name_patterns") or []:
             if not pat:
                 continue
             try:
                 if re.search(pat, name):
-                    return False, "blacklist_name_patterns", str(pat)
+                    return False, "filter_name_patterns", str(pat)
             except re.error:
                 # 正则写错了不能连累整个构建：跳过这一条，并在日志里留痕
                 print(f"[WARN] filter.json 里的名字正则无效，已跳过：{pat}")
 
-    for fam in cfg.get("blacklist_api_families") or []:
+    for fam in cfg.get("filter_api_prefixes") or []:
         if fam and api.startswith(str(fam)):
-            return False, "blacklist_api_families", str(fam)
+            return False, "filter_api_prefixes", str(fam)
 
-    black_hosts = cfg.get("blacklist_hosts") or []
+    black_hosts = cfg.get("filter_hosts") or []
     if black_hosts:
         for h in extract_hosts(site):
             if host_blacklisted(h, black_hosts):
-                return False, "blacklist_hosts", h
+                return False, "filter_hosts", h
 
     if not site.get("jar") and spider_classes is not None:
         cls = class_name_of(api)
@@ -718,9 +719,8 @@ def merge(fetched, spider_classes, cfg, cohort: dict):
 
     cohort["kept"] = len(kept)
     # 另外存一份【保留下来的站点列表】：cohort["kept"] 是数量（status.json 里
-    # sites.kept 就是它），而 failure_streak 的"这次成功的 key 要清零"必须
-    # 拿到那一串 key 才做得出来 —— 早先 update_failure_streak 直接遍历数量，
-    # 一跑就是 TypeError: 'int' object is not iterable，构建崩在写 filter.json 之前。
+    # sites.kept 就是它），但调用方经常需要那一串 site 本身（算首页候选、
+    # 报告里列举保留下来的站），所以这里额外给一份列表，别让调用方去猜。
     cohort["kept_sites"] = kept
     cohort["dropped"] = drops
     cohort["total_input"] = len(kept) + sum(1 for d in drops if d.reason != "duplicate")
@@ -898,19 +898,19 @@ def build_fragments(ctx: dict) -> dict:
 
     g1 = [d for d in ctx["dropped_all"] if d.reason == "missing_class"]
     g2 = [d for d in ctx["dropped_all"] if d.reason in
-          ("blacklist_keys", "blacklist_name_patterns", "blacklist_api_families", "blacklist_hosts")]
+          ("filter_keys", "filter_name_patterns", "filter_api_prefixes", "filter_hosts")]
 
     def reason_g1(d):
         return f"{esc(d.matched)} 包里没有"
 
     def reason_g2(d):
-        if d.reason == "blacklist_keys":
-            return "key 拉黑"
-        if d.reason == "blacklist_name_patterns":
+        if d.reason == "filter_keys":
+            return "按 key 过滤"
+        if d.reason == "filter_name_patterns":
             return f"名字命中「{esc(d.matched)}」"
-        if d.reason == "blacklist_api_families":
-            return f"整族拉黑：{esc(d.matched)}"
-        return f"网址拉黑：{esc(d.matched)}"
+        if d.reason == "filter_api_prefixes":
+            return f"按 api 前缀过滤：{esc(d.matched)}"
+        return f"按域名过滤：{esc(d.matched)}"
 
     def dup_reason(d):
         return f"只留 {esc(d.kept_from)} 的"
@@ -1174,24 +1174,25 @@ DEMO_MISSING_EXAMPLES = [
     ("玩偶", "💓玩偶┃4K💓", "WoggGuard"),
 ]
 
-# 规则命中（16 个）：(key, 名字, reason, 命中的词)。前 12 个按 key 拉黑，后 4 个按名字命中。
+# 规则命中（16 个）：(key, 名字, reason, 命中的词)。前 12 个按 key 过滤，后 4 个按名字命中。
+# 注意这是 --demo 的固定样例数据，用来渲染报告；reason 必须与 filter_site 现在返回的名字一致。
 DEMO_RULE_HITS = [
-    ("csp_少儿", "📚┃少儿┃教育", "blacklist_keys", ""),
-    ("csp_小学", "📚┃小学┃课堂", "blacklist_keys", ""),
-    ("csp_初中", "📚┃初中┃课堂", "blacklist_keys", ""),
-    ("csp_高中", "📚┃高中┃课堂", "blacklist_keys", ""),
-    ("少儿教育", "📚少儿┃教育📚", "blacklist_keys", ""),
-    ("小学课堂", "📚小学┃课堂📚", "blacklist_keys", ""),
-    ("初中课堂", "📚初中┃课堂📚", "blacklist_keys", ""),
-    ("高中教育", "📚高中┃教育📚", "blacklist_keys", ""),
-    ("央视经典", "📺┃央视┃经典", "blacklist_keys", ""),
-    ("py_cctv_少儿", "📺┃央视┃少儿", "blacklist_keys", ""),
-    ("豆瓣1", "📢公告停更", "blacklist_keys", ""),
-    ("push_agent", "关注公众号：熊猫是只肥猫", "blacklist_keys", ""),
-    ("csp_wogg1", "🐲接口失效", "blacklist_name_patterns", "失效"),
-    ("csp_woog2", "🐲关注公众号", "blacklist_name_patterns", "关注公众号"),
-    ("夸快3", "❤装歌APP", "blacklist_name_patterns", "装歌"),
-    ("夸快2", "❤重新领取", "blacklist_name_patterns", "重新领取"),
+    ("csp_少儿", "📚┃少儿┃教育", "filter_keys", ""),
+    ("csp_小学", "📚┃小学┃课堂", "filter_keys", ""),
+    ("csp_初中", "📚┃初中┃课堂", "filter_keys", ""),
+    ("csp_高中", "📚┃高中┃课堂", "filter_keys", ""),
+    ("少儿教育", "📚少儿┃教育📚", "filter_keys", ""),
+    ("小学课堂", "📚小学┃课堂📚", "filter_keys", ""),
+    ("初中课堂", "📚初中┃课堂📚", "filter_keys", ""),
+    ("高中教育", "📚高中┃教育📚", "filter_keys", ""),
+    ("央视经典", "📺┃央视┃经典", "filter_keys", ""),
+    ("py_cctv_少儿", "📺┃央视┃少儿", "filter_keys", ""),
+    ("豆瓣1", "📢公告停更", "filter_keys", ""),
+    ("push_agent", "关注公众号：熊猫是只肥猫", "filter_keys", ""),
+    ("csp_wogg1", "🐲接口失效", "filter_name_patterns", "失效"),
+    ("csp_woog2", "🐲关注公众号", "filter_name_patterns", "关注公众号"),
+    ("夸快3", "❤装歌APP", "filter_name_patterns", "装歌"),
+    ("夸快2", "❤重新领取", "filter_name_patterns", "重新领取"),
 ]
 
 # 同名重复（8 个 = 4 个 key × 2 份，其中 key 为 push_agent 的共 4 份）
@@ -1352,7 +1353,7 @@ def build_demo_ctx(built_at: str = "", run_label: str = "第 1 份台账") -> di
 
 
 # ════════════════════════════════════════════════════════════
-# 九、failure_streak：跨天的连续失败计数（写回 filter.json）
+# 九、上次构建状态（读 status.json 做差分；不再有任何跨轮累积的规则）
 # ════════════════════════════════════════════════════════════
 
 def load_prev_status(path=None):
@@ -1369,61 +1370,31 @@ def load_prev_status(path=None):
 
 
 def update_failure_streak(cfg, cohort):
-    """按【站点】维度累加连续失败计数，并写回 filter.json。
+    """【已停用】原来是"站点连续失败 N 次就自动进黑名单"。
 
-    口径（这是本脚本和上游最大的不同之一）：
-      · 这里说的"源"是【站点 site】，不是上游源；
-      · "失败"的判据是静态筛：被 missing_class 剔除的站【必然跑不了】，算一次失败；
-      · 这次保留下来的 key → 计数清零（删掉该键）；
-      · 这次失败的 key → 计数 +1，达到 blacklist_after_streak 就自动进 blacklist_keys；
-      · 这次压根没出现在输入里的 key → 计数清掉："连续"指的是连续 N 次构建都出现且都失败，
-        一个站从上游消失了就不该继续背着历史计数（否则它哪天回来会直接被黑）。
+    ★ 2026-10-03 删除该机制，原因（真机踩出来的）：
 
-    为什么要跨天累加：一次抓取失败可能只是对方临时抖动，第二天就好了。
-    连续 N 天都失败才说明这个站真的死了，这时候才值得写进黑名单 ——
-    否则黑名单会被一次网络抖动灌满，把好站也误杀。
+      它把"类不存在"当成本站失败并跨轮累加，连续 3 次就把 key 追加进
+      blacklist_keys（并写回 filter.json）。而 filter_site 的优先级里
+      黑名单(第2) 高于 类校验(第6) —— 一旦写进去，那个站【再也不会被重新评估】。
+
+      踩坑场景：spider_source 选成了 wangxiao 的 jar（290 类），而池子里
+      肥猫那一族的站（豆瓣/潮流/肥猫/干荐片/看球…）叫的类只在肥猫的 jar（512 类）里。
+      于是它们连续 3 轮被判 missing_class → 38 个好站被永久拉黑。
+      后来换回肥猫的 jar，这 38 个站明明能跑了，却因为黑名单优先级更高而永远出不来。
+
+      更根本的问题：jar 读失败时 spider_classes 是 None → 类校验【整个跳过】，
+      所以"网络抖动导致误判"这条路径根本不存在 —— 那个 ×3 的等待期防的是
+      一个不存在的风险，却引入了一个真风险（陈旧累积、名单只增不减）。
+
+      现在的做法：类存在性【每轮实时判、当场剔、不记录】。判据是当轮 jar 的函数，
+      存下来必然过期。
+
+    保留这个函数名是为了让旧调用点/旧测试有明确的失败信息，而不是静默什么都不做。
     """
-    streak = dict(cfg.get("failure_streak") or {})
-    # filter.json 是会被同事手工编辑的文件：阈值写成 "3次" / 空 / 负数都不能让构建崩。
-    # 0 和空值按"没填"处理（回落默认 3），负数按 1 处理（>=1 才有意义）。
-    try:
-        threshold = max(1, int(cfg.get("blacklist_after_streak") or
-                             FILTER_DEFAULTS["blacklist_after_streak"]))
-    except (TypeError, ValueError):
-        threshold = int(FILTER_DEFAULTS["blacklist_after_streak"])
-    auto_added = []
-
-    failed_keys = {d.key for d in cohort["dropped"] if d.reason == "missing_class"}
-    # 遍历的是站点列表 kept_sites，不是 cohort["kept"]（那是个数量）。
-    # 兼容手工构造的 cohort（只给了 kept 列表的调用方）。
-    kept_sites = cohort.get("kept_sites")
-    if kept_sites is None:
-        kept_sites = cohort.get("kept") if isinstance(cohort.get("kept"), list) else []
-    ok_keys = {str(s.get("key")) for s in kept_sites if s.get("key")}
-    appeared = failed_keys | ok_keys
-
-    updated = {}
-    for key in appeared:
-        if key in failed_keys:
-            updated[key] = int(streak.get(key, 0)) + 1
-    # 没出现在 appeared 里的历史键一律丢掉（含本次成功清零的）
-    streak = updated
-
-    black = list(cfg.get("blacklist_keys") or [])
-    for key in sorted(streak):
-        if streak[key] >= threshold and key not in black:
-            black.append(key)
-            auto_added.append(f"{key}（连续 {streak[key]} 次）")
-    # 进了黑名单就从 streak 里摘掉：否则计数会一直涨，日志噪音
-    for key in [k for k in streak if k in black]:
-        streak.pop(key, None)
-
-    cfg["failure_streak"] = streak
-    cfg["blacklist_keys"] = black
-    if auto_added:
-        print(f"[规则] {len(auto_added)} 个站连续失败达到 {threshold} 次，"
-              f"已自动加入黑名单：{', '.join(auto_added[:10])}")
-    return cfg, auto_added
+    raise RuntimeError(
+        "update_failure_streak 已停用（2026-10-03）：类存在性改为每轮实时判定，"
+        "不再累积任何黑名单。filter.json 只由人维护，脚本不写它。")
 
 
 # ════════════════════════════════════════════════════════════
@@ -1491,37 +1462,24 @@ def build_ctx_from_status(status, prev_status, dropped_all, duplicates):
 
 
 def choose_home(kept_sites, candidates):
-    """挑出要写进 config.json 的 `home` —— 也就是 App 启动后默认打开的首页站点 key。
+    """【已停用】原来是挑一个 key 写进产物的 `home` 字段当默认首页。
 
-    ⚠️ 为什么必须有这个字段：
-      App 的 VodConfig.java:288 在没有 home（或 home 指不到任何站）时会退回
-      getSites().get(0)。而合并后的第一条是【上游优先级最高那家的第一个站】，
-      实测是肥猫的「📚┃儿童┃启蒙」—— 儿歌/启蒙片库，而且 searchable=0。
-      对家里老人来说这是最差的默认首页，纯属抓取顺序的副产品，不是任何人选的。
+    ★ 2026-10-03 停用，因为那个字段对本站 App 是【死的】：
+      App 决定首页的是 VodConfig.java:288 的三级回退 ——
+        ① custom.home()：用户在 App 里手动选过的（存本地数据库）
+        ② 云端 config.json 的 home 字段（用 key 去 filter 站点）
+        ③ 都没有 → getSites().get(0)
+      而 VodConfig 里读的 JSON 键是 logo/notice/danmaku/wallpaper/spider/sites/parses，
+      【没有 home】（全仓库唯一读它的是 ConfigImport.java:57，那里把它当"配置名字"用）。
+      所以写了也不生效，只会让人以为首页被指定了。
 
-    依据（App 侧，只读参考，没改过任何一行）：
-      · Config.java:40          `@SerializedName("home")` —— 这是个标准字段，不用新增
-      · VodConfig.java:288      filter(key == home)，找不到就回退第一条（天然降级）
-      · Site.viewName / getKey  home 里要填的是站点的 key，不是 name
+      想改默认首页只能改【合并顺序】（sources.json 的源顺序 → sites[0]）。
 
-    两个刻意的设计决定：
-      ① **candidates 有序**（sources.json 的 home_candidates），取第一个真实存在的。
-         不做"按片库/分类数自动打分择优"：那会让默认首页每天在几个站之间跳，
-         老人开机看到的界面天天变。稳定 > 多几百页片库。
-      ② **candidates 全部落空时不写 home 字段**，而不是硬写一个。
-         写一个指向不存在的 key，等于把"为什么首页是这个站"藏进一个假配置里；
-         不写，App 回退到第一条的行为和今天完全一样，可解释、可复现。
-
-    返回 (home_key, note)：note 是给日志/报告看的人话说明，说明这个值是哪来的。
+    保留函数是为了让旧调用点/旧测试拿到明确的失败信息，而不是静默返回空。
     """
-    by_key = {str(s.get("key") or "").strip(): s for s in kept_sites
-              if isinstance(s, dict)}
-    for cand in candidates or []:
-        key = str(cand or "").strip()
-        if key and key in by_key:
-            return key, f"按 home_candidates 命中「{key}」"
-
-    return "", "home_candidates 一个都没留下，不写 home（App 回退到第一条站点）"
+    raise RuntimeError(
+        "choose_home 已停用（2026-10-03）：产物不再写 home 字段（App 不读它）。"
+        "默认首页 = sites[0]，由 sources.json 的源顺序决定。")
 
 
 def main() -> int:
@@ -1692,29 +1650,32 @@ def main() -> int:
     if spider_value:
         merged["spider"] = sanitized_spider(spider_value)
 
-    # filter.json 的 failure_streak 累加与写回。
-    # 只有本次真的拿到了站点（kept + dropped 非空）才动它：假如某天所有源都只返回
-    # 一个空 config（sites 全空），appeared 就是空集，写回去会把历史计数全抹掉，
-    # 等于把"连续失败"的记忆清零、白攒几天。宁可这次不更新。
-    auto_added = []
-    if kept or dropped_all:
-        cfg, auto_added = update_failure_streak(cfg, cohort)
-        save_filter(cfg)
-    else:
-        log("[WARN] 本次一个站点都没拿到，跳过 filter.json 的 failure_streak 更新")
+    # ★ 这里原来会调 update_failure_streak(cfg, cohort) 并把结果 save_filter(cfg) 写回
+    #   filter.json（自动拉黑）。2026-10-03 整段删除：
+    #   filter.json 现在【只由人维护】，脚本只读不写；类存在性每轮实时判定。
+    #   详见 update_failure_streak 的说明（那个函数现在会直接抛异常，防止有人再调）。
+    if not (kept or dropped_all):
+        log("[WARN] 本次一个站点都没拿到（config.json 仍会照常产出，见下面的拒空闸）")
 
     merged["warningText"] = (
         f"本配置由 {len([s for s in upstream_sources if s['ok']])} 个公开源聚合，"
         f"已做类存在性校验与规则清洗；仅供学习交流，请勿商用"
     )
 
-    # 首页默认站点。挑不到就【不写这个字段】（App 自己回退第一条），
-    # 绝不能写一个指不存在的 key —— 那是往产物里塞假配置。
-    home_key, home_note = choose_home(cohort.get("kept_sites") or [],
-                                      src_cfg.get("home_candidates"))
-    if home_key:
-        merged["home"] = home_key
-    log(f"首页默认站点：{home_note}")
+    # ★ 不再往产物 config.json 里写 home 字段，也不再算它。
+    #   理由（2026-10-03 在真机 + 源码上核实过）：
+    #   App 决定首页用的是 VodConfig.java:288 的三级回退 ——
+    #     ① custom.home()：用户在 App 里手动选过的（存本地数据库）
+    #     ② 云端 config.json 的 home 字段（用 key 去 filter 站点）
+    #     ③ 都没有 → getSites().get(0)
+    #   而实测【云端这个 home 字段对本站 App 是死的】：VodConfig 里读的 JSON 键是
+    #   logo/notice/danmaku/wallpaper/spider/sites/parses，没有 home
+    #   （全仓库唯一读它的是 ConfigImport.java:57，那里把它当"配置名字"用）。
+    #   旧配置（用户一直在用的那份）本来也没有这个字段。
+    #
+    #   后果：默认首页 = sites[0] = 【合并顺序里第一个被保留的站】，
+    #   而合并顺序由 sources.json 的源顺序决定。想改默认首页就改源顺序。
+    log("首页：不写 home 字段（App 取 sites[0] 或用户在电视上手动选的那个）")
 
     with open(OUT_CONFIG, "w", encoding="utf-8") as f:
         json.dump(merged, f, ensure_ascii=False, indent=2)
@@ -1750,8 +1711,9 @@ def main() -> int:
             "cache": sum(1 for s in upstream_sources if s["from_cache"]),
             "down": sum(1 for s in upstream_sources if not s["ok"]),
         },
-        "auto_blacklisted": auto_added,
-        "home": {"key": home_key, "note": home_note},
+        # 已停用：脚本不再自动拉黑任何站（见 update_failure_streak 的说明）。
+        # 保留这个空字段是为了不让下游读 status.json 的地方 KeyError。
+        "auto_blacklisted": [],
     }
     with open(OUT_STATUS, "w", encoding="utf-8") as f:
         json.dump(status, f, ensure_ascii=False, indent=2)
