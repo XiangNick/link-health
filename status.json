@@ -1,7 +1,7 @@
 {
-  "built_at": "2026-10-03 14:16:58",
+  "built_at": "2026-10-03 14:26:09",
   "generator": "yingshi-build/1.0",
-  "build_no": 1,
+  "build_no": 2,
   "spider": {
     "source_id": "wangerxiao",
     "source_name": "王二小",
@@ -124,7 +124,7 @@
         },
         {
           "url": "http://我不是.摸鱼儿.com",
-          "error": "http://我不是.摸鱼儿.com → JSONDecodeError: Expecting value: line 1 column 1 (char 0)；正文开头：<!-- 115719958736 --> <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"utf-8\"> <meta name=\"viewport\" conte"
+          "error": "http://我不是.摸鱼儿.com → JSONDecodeError: Expecting value: line 1 column 1 (char 0)；正文开头：<!-- 179388203789 --> <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"utf-8\"> <meta name=\"viewport\" conte"
         },
         {
           "url": "http://我不是.摸鱼儿.xyz",
@@ -685,5 +685,23 @@
     "cache": 0,
     "down": 7
   },
-  "auto_blacklisted": []
+  "auto_blacklisted": [
+    "77（连续 3 次）",
+    "PanSou（连续 3 次）",
+    "UpYun（连续 3 次）",
+    "csp_WoGG（连续 3 次）",
+    "一起看（连续 3 次）",
+    "七夜（连续 3 次）",
+    "九六（连续 3 次）",
+    "南坊（连续 3 次）",
+    "南瓜（连续 3 次）",
+    "在线┃直播1（连续 3 次）",
+    "小柚（连续 3 次）",
+    "繁星（连续 3 次）",
+    "萌米（连续 3 次）"
+  ],
+  "home": {
+    "key": "snzy",
+    "note": "按 home_candidates 命中「snzy」"
+  }
 }
