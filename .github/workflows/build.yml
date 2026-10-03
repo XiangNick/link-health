@@ -133,36 +133,81 @@ jobs:
       # ────────────────────────────────────────────────────────────────
       # 刷新 jsDelivr 缓存。这一步【不能省】。
       #
-      # jsDelivr 对 @main 这种分支引用会缓存，最长 12 小时。不主动刷的话，
-      # 你这边改了配置，电视那边可能半天还拿到旧的那一份。
+      # ⚠️ 2026-10-03 实测修正（推翻本文档早先"purge 后 20 秒全部刷新"的说法）：
+      #   · purge 只有一个接口：purge.jsdelivr.net（返回 application/json）。
+      #     testingcf / fastly / gcore 是【内容节点】，拿它们当 purge 用只会
+      #     下载到文件本身、什么都没刷 —— 别往这个循环里加主机名。
+      #   · cdn.jsdelivr.net 走 Fastly，testingcf/gcore 走 Cloudflare，
+      #     是两套独立缓存，刷一套不等于刷另一套。
+      #   · 对【分支引用 @main】的刷新是"最终一致 + 会被限流"：官方维护者在
+      #     jsdelivr/jsdelivr#18471 里明说分支文件的 purge "isn't entirely
+      #     reliable as there's currently some minimum cache time (up to 12 hours)"。
+      #     实测：run #2 之后 cdn.jsdelivr.net 还是旧配置，几分钟后才变新。
+      #   · 所以这里【必须看返回体】而不是只看退出码：被限流时 HTTP 仍是 200，
+      #     但 body 里是 "throttled": true —— 只看退出码会以为刷成功了。
       #
-      # 实测过：commit 之后大约 20 秒内，cdn / gcore / testingcf / fastly
-      # 四个节点会全部刷新（purge 会传播到所有节点）。
-      #
-      # purge.jsdelivr.net 是公开接口，不需要任何 token。
-      # 用 -f 让 4xx/5xx 直接失败，这样这一步红了能看见，不会静默成功。
+      # 为什么还要一次刷三个路径：purge 接口一次一个路径，且会限流，
+      # 所以逐个刷、每个失败都重试，最后再抽查一次配置是否真的变了。
       # ────────────────────────────────────────────────────────────────
       - name: 刷新 jsDelivr 缓存
         if: always()
         run: |
-          set -euo pipefail
+          set -uo pipefail
+
+          BASE="https://purge.jsdelivr.net/gh/${GITHUB_REPOSITORY}@main"
+          FAILED=0
 
           purge_one() {
             local target="$1"
-            echo "刷新: ${target}"
-            local resp
-            resp=$(curl -fsS -m 60 "${target}") || {
-              echo "  ⚠️ 这个地址刷新失败（可能是还没被缓存过，不算致命）"
-              return 0
-            }
-            echo "  ${resp}"
+            local attempt body
+            for attempt in 1 2 3; do
+              echo "刷新（第 ${attempt} 次）: ${target}"
+              body=$(curl -sS -m 60 -w '\n%{http_code}' "${target}" 2>&1) || true
+              echo "  ${body}"
+              if echo "${body}" | grep -q '"status"[[:space:]]*:[[:space:]]*"finished"' \
+                 && ! echo "${body}" | grep -q '"throttled"[[:space:]]*:[[:space:]]*true'; then
+                echo "  ✅ 已受理"
+                return 0
+              fi
+              if echo "${body}" | grep -q '"throttled"[[:space:]]*:[[:space:]]*true'; then
+                echo "  ⚠️ 被限流（jsDelivr 对 purge 有频率限制），等 ${attempt}0 秒后重试"
+              else
+                echo "  ⚠️ 没拿到 finished，等 ${attempt}0 秒后重试"
+              fi
+              sleep $((attempt * 10))
+            done
+            echo "  ❌ 重试 3 次仍未确认刷新：${target}"
+            return 1
           }
 
-          BASE="https://purge.jsdelivr.net/gh/${GITHUB_REPOSITORY}@main"
+          # 三个产物都刷：config.json 是 App 要读的，另外两个是给人看的
+          purge_one "${BASE}/config.json"  || FAILED=1
+          purge_one "${BASE}/status.json"  || FAILED=1
+          purge_one "${BASE}/report.html"  || FAILED=1
 
-          # 三个产物都刷一遍：config.json 是 App 要读的，另外两个是给人看的
-          purge_one "${BASE}/config.json"
-          purge_one "${BASE}/status.json"
-          purge_one "${BASE}/report.html"
+          # 抽查：主节点上的 config.json 是不是已经换成新产物。
+          # ⚠️ 只当【告警】不当失败：分支引用的刷新是最终一致的，刚刷完可能还是旧的，
+          #    这里红了会天天误报，反而让人不再看它。真正的失败由上面 purge_one 决定。
+          #
+          # 两个 python 调用都显式写 encoding 并取 stdout 的最后一行：
+          # runner 的默认编码不一定是 utf-8（config.json 里有中文），
+          # 而且失败时 python 会往 stderr 吐 traceback —— 不隔离的话站点数会判成 "?"。
+          count_sites() {
+            python -c "import io,json,sys;print(len(json.load(io.open(sys.argv[1],encoding='utf-8')).get('sites') or []))" "$1" 2>/dev/null | tail -n1
+          }
+          echo "---- 抽查 cdn.jsdelivr.net 上的 config.json ----"
+          curl -sS -m 60 "https://cdn.jsdelivr.net/gh/${GITHUB_REPOSITORY}@main/config.json" -o /tmp/remote-config.json || true
+          LOCAL_SITES=$(count_sites config.json || echo "?")
+          REMOTE_SITES=$(count_sites /tmp/remote-config.json || echo "?")
+          echo "  本地产物站点数=${LOCAL_SITES}  主节点返回站点数=${REMOTE_SITES}"
+          if [ -n "${LOCAL_SITES}" ] && [ "${LOCAL_SITES}" != "?" ] && [ "${LOCAL_SITES}" = "${REMOTE_SITES}" ]; then
+            echo "  ✅ 主节点已是本次产物"
+          else
+            echo "::warning::主节点可能还是旧产物（分支引用刷新是最终一致的，通常几分钟内追平）。电视最多晚一会儿才拿到新配置，不影响已有配置可用性。"
+          fi
 
+          if [ "${FAILED}" -ne 0 ]; then
+            echo "::error::有产物没能确认刷新 —— 去 https://www.jsdelivr.com/tools/purge 手动刷这三个地址"
+            exit 1
+          fi
           echo "::notice::缓存刷新完成 —— 电视那边重开 App 就能拿到最新的"
