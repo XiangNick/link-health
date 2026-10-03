@@ -1047,6 +1047,35 @@ def _bar_tier_opacity(i):
 # 七、渲染报告（string.Template，绝不能用 str.format / f-string）
 # ════════════════════════════════════════════════════════════
 
+# ── 模板里"只给维护者看"的区块（渲染时整块剥掉）──
+#
+# 背景：report_template.html 顶部有 287 行【写给维护者】的说明（渲染契约、占位符
+# 清单、示例期望值）。它最初只是一段 HTML 注释，但 string.Template 不会删注释，
+# 于是每天原样灌进产物：实测产物 1990 行里 287 行是它，占字节 13.5%。
+# 报告打开第一眼看到的就是这坨开发文档，而且它自己还写着"本文件是模板、请勿当报告看"。
+#
+# ⚠️ 为什么用标记剥离、而不是直接把这 287 行从模板里删掉：
+#   tests/test_ctx_and_fragments.py 的 template_placeholders() 会扫【整个模板文件】，
+#   并【刻意】把注释里连写的 $$name 也算成"模板提到过的占位符"，然后断言
+#   "模板提到的名字 == 脚本提供的名字"（严格相等，多一个少一个都算契约破了）。
+#   那段文档正是这份清单的栖身处 —— 删掉它，契约测试会当场红。
+#   → 所以文档留在模板里（测试照扫），只在【渲染产物】时剥掉。
+#
+# ⚠️ 标记里不许出现 `$`：本文件是被正则扫 $$name 的，标记本身若带 $ 会污染契约。
+DEV_DOCS_RE = re.compile(r"[ \t]*<!--\s*@@DEV-DOCS-START@@.*?@@DEV-DOCS-END@@\s*-->\s*",
+                         re.S)
+
+
+def strip_dev_docs(tpl: str) -> str:
+    """剥掉模板里 @@DEV-DOCS-START@@ / @@DEV-DOCS-END@@ 之间的维护者说明。
+
+    只被 render_report 调用 —— 契约测试扫的是【模板文件原文】，不受影响。
+    标记缺失时原样返回：宁可产物里多一段注释（丑但能看），也不能把报告弄没。
+    """
+    out = DEV_DOCS_RE.sub("", tpl, count=1)
+    return out if out != tpl else tpl
+
+
 def render_report(ctx: dict) -> bool:
     """渲染 report.html。返回是否真的写出了文件。
 
@@ -1061,7 +1090,8 @@ def render_report(ctx: dict) -> bool:
 
     ⚠️ 模板顶部的「渲染契约」是 HTML 注释，里面写满了 $chart_bars 这类
        占位符名当说明文字，所以模板约定它们要连写成两个美元符号。
-       这个注释不进扫描范围（它在页面上不显示），但正文里一个 $name 都不许剩。
+       那块说明由 strip_dev_docs() 在渲染前整块剥掉（它不进产物，页面上也看不见），
+       但正文里一个 $name 都不许剩。
     """
     if not os.path.exists(TEMPLATE_FILE):
         print(f"[WARN] 报告模板不存在，跳过报告生成：{TEMPLATE_FILE}")
@@ -1070,6 +1100,8 @@ def render_report(ctx: dict) -> bool:
     with open(TEMPLATE_FILE, encoding="utf-8") as f:
         tpl = f.read()
 
+    # 先剥维护者说明，再替换占位符：顺序反了会把文档里的 $$name 也当成真占位符处理。
+    tpl = strip_dev_docs(tpl)
     out = string.Template(tpl).safe_substitute(build_fragments(ctx))
 
     # 残留占位符检测：只看"页面上看得见"的部分，把 HTML 注释和 CSS 注释都剔掉。
@@ -1077,6 +1109,8 @@ def render_report(ctx: dict) -> bool:
     # "$name"，那是给人看的文档，不是没替换掉的占位符 —— 不该报警。
     scan = re.sub(r"<!--.*?-->", "", out, flags=re.S)
     scan = re.sub(r"/\*.*?\*/", "", scan, flags=re.S)
+    # 万一 strip_dev_docs 因为标记缺失没剥掉，也别让那 28 个文档名刷屏成"残留告警"。
+    scan = DEV_DOCS_RE.sub("", scan, count=1)
     leftovers = sorted(set(re.findall(r"\$([A-Za-z_][A-Za-z0-9_]*)", scan)))
     if leftovers:
         print(f"[WARN] 正文里有 {len(leftovers)} 个占位符没被替换（模板可能刚改过）："

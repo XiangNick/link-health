@@ -460,5 +460,122 @@ class RenderReportTest(unittest.TestCase):
         self.assertIn("$chart_bars 是说明文字", html_text)
 
 
+class DevDocsStripTest(unittest.TestCase):
+    """模板顶部的维护者说明必须在【产物】里被剥掉，但必须留在【模板文件】里。
+
+    为什么两件事都要测：
+      · 不剥 → 产物第一眼是一大坨开发文档（实测占 287 行 / 13.5% 字节），
+        而且它自己写着"本文件是模板、请勿当报告看"；
+      · 从模板里删掉 → template_placeholders() 扫不到那 28 个 $$name 文档名，
+        BuildFragmentsContractTest 的"严格相等"当场破 —— 文档必须留在模板里。
+    这两条是矛盾的，只有"留模板、剥产物"能同时满足。
+    """
+
+    def read_template(self):
+        with open(H.TEMPLATE_SRC, encoding="utf-8") as f:
+            return f.read()
+
+    def test_real_template_has_both_markers(self):
+        tpl = self.read_template()
+        self.assertIn("@@DEV-DOCS-START@@", tpl)
+        self.assertIn("@@DEV-DOCS-END@@", tpl)
+
+    def test_strip_removes_the_block_from_the_real_template(self):
+        tpl = self.read_template()
+        out = build.strip_dev_docs(tpl)
+        self.assertNotIn("@@DEV-DOCS-START@@", out)
+        self.assertNotIn("@@DEV-DOCS-END@@", out)
+        # 这段文字只存在于维护者说明里，产物里绝对不能有
+        for gone in ("本文件是【模板】，不是成品", "【渲染契约】", "占位符总清单"):
+            self.assertNotIn(gone, out, f"产物里残留了维护者说明：{gone}")
+        # 真正的报告结构必须还在
+        self.assertTrue(out.startswith("<!DOCTYPE html>"), out[:60])
+        self.assertIn("<html lang=\"zh-CN\">", out)
+        self.assertIn("</html>", out)
+
+    def test_strip_keeps_doctype_first_and_adjacent_to_html(self):
+        """剥完不能让 <html> 和 <!DOCTYPE> 之间空出几行 —— 那会让产物第一屏是空白。
+
+        这条同时防止一个更隐蔽的错：万一将来有人把 START 标记挪到 DOCTYPE 前面，
+        DOCTYPE 就不是文件第一个东西了，浏览器会降级到 quirks mode。
+        """
+        out = build.strip_dev_docs(self.read_template())
+        self.assertEqual(out.count("<!DOCTYPE html>"), 1,
+                         "DOCTYPE 只能有一个，多了说明模板被拼坏过")
+        self.assertRegex(out, r"\A<!DOCTYPE html>\s*<html lang=\"zh-CN\">")
+
+    def test_strip_only_drops_docs_only_names(self):
+        """剥离只能丢掉"【只】出现在说明里的名字"，正文真正用到的占位符一个都不许少。
+
+        ⚠️ 这条是【有意的例外清单】，不是放宽校验：
+           site_cut_pct / dropped_total 由 build_fragments 算出来（build.py:1013 / 965），
+           但模板正文从头到尾没用过 —— 它们是"算而不用的死变量"，只靠说明里的那两行
+           才被 template_placeholders() 看见（因此 BuildFragmentsContractTest 才没红）。
+           剥掉说明后它们必然消失，这是【正确的暴露】而不是 bug。
+
+        另外注意：这里比的是 abs，不能拿 template_placeholders() 直接比 —— 后者扫的是
+        模板【文件原文】、故意含说明里的 $$name，它的口径必须保持不动（见
+        test_key_set_matches_template_exactly 的说明）。
+        """
+        tpl = self.read_template()
+        stripped = build.strip_dev_docs(tpl)
+        before = set(re.findall(r"\$([A-Za-z_][A-Za-z0-9_]*)", tpl))
+        after = set(re.findall(r"\$([A-Za-z_][A-Za-z0-9_]*)", stripped))
+        self.assertEqual(after - before, set(), "剥离不该凭空多出占位符")
+        self.assertEqual(before - after, {"site_cut_pct", "dropped_total"},
+                         "剥离丢掉的必须只有这两个死变量；多丢了就是正文被误删")
+
+    def test_every_body_placeholder_survives_the_strip(self):
+        """正文（说明块之外）用到的占位符，剥离后一个都不能少 —— 少一个就是页面留白。
+
+        读段落的方式与 strip_dev_docs 无关：按标记手动切，避免"用被测函数去验证自己"。
+        """
+        tpl = self.read_template()
+        body = tpl.split("@@DEV-DOCS-END@@ -->", 1)[1]
+        body_ph = set(re.findall(r"\$([A-Za-z_][A-Za-z0-9_]*)", body))
+        stripped_ph = set(re.findall(r"\$([A-Za-z_][A-Za-z0-9_]*)",
+                                     build.strip_dev_docs(tpl)))
+        self.assertTrue(body_ph, "正文一个占位符都没有？标记八成插错了位置")
+        self.assertEqual(body_ph - stripped_ph, set(),
+                         "正文里的占位符被剥离误删了")
+
+    def test_markers_themselves_carry_no_dollar(self):
+        """标记会被正则扫 $$name，标记里混进 $ 就会污染契约清单。"""
+        for m in ("@@DEV-DOCS-START@@", "@@DEV-DOCS-END@@"):
+            self.assertNotIn("$", m)
+
+    def test_missing_markers_returns_template_unchanged(self):
+        """标记丢了时不能返回空串：宁可产物多一段注释（丑但能看），
+        也绝不能把整份报告弄成空白。"""
+        plain = "<!DOCTYPE html>\n<html>$built_at</html>"
+        self.assertEqual(build.strip_dev_docs(plain), plain)
+
+    def test_only_the_first_block_is_stripped(self):
+        """只剥第一块（count=1）：产物里出现第二块只可能有人手写，不是我们的文档。
+
+        ⚠️ 标记内容不能用单字母（A/B 之类）：断言失败时 unittest 会把 "unexpectedly
+        found" 这段【报错文本】回显出来，里面本身就有大写字母，assertNotIn("A", out)
+        会被自己的报错消息喂饱、变成一个永远失败的假用例。用带 @@ 的长标记。
+        """
+        tpl = ("<!DOCTYPE html>\n"
+               "<!-- @@DEV-DOCS-START@@FIRSTBLOCK@@DEV-DOCS-END@@ -->\n"
+               "<html><!-- @@DEV-DOCS-START@@SECONDBLOCK@@DEV-DOCS-END@@ --></html>")
+        out = build.strip_dev_docs(tpl)
+        self.assertNotIn("FIRSTBLOCK", out)
+        self.assertIn("SECONDBLOCK", out)
+
+    def test_real_render_output_has_no_dev_docs(self):
+        """端到端：拿真模板真渲染一遍，产物里不许有维护者说明，也不许有残留占位符。"""
+        with H.sandbox() as sb:          # copy_template=True → 用的就是仓库里那份真模板
+            with H.capture_stdout() as out:
+                self.assertTrue(build.render_report(ctx()))
+            html_text = sb.read_report()
+        for gone in ("本文件是【模板】，不是成品", "【渲染契约】", "占位符总清单"):
+            self.assertNotIn(gone, html_text)
+        self.assertNotIn("@@DEV-DOCS", html_text)
+        self.assertEqual(visible_leftovers(html_text), [])
+        self.assertNotIn("没被替换", out.getvalue())
+
+
 if __name__ == "__main__":
     unittest.main()
