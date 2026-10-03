@@ -17,11 +17,11 @@ build.py —— 外部来源快照构建器
                                               并把本次成功的结果写回该目录（滚动缓存）
 
 输入（仓库里手工维护的文件）：
-    config/sources.json    上游源清单 + 【显式指定谁提供 spider】
+    config/sources.json    上游源清单 + 【显式指定谁提供 spider】+ 首页候选（home_candidates）
     config/filter.json     五类过滤规则 + 连续失败计数（脚本会写回它）
 
 输出（脚本生成，不要手改）：
-    config.json     给 App 读的聚合单仓（不再输出任何多仓/订阅文件）
+    config.json     给 App 读的聚合单仓（spider + home + sites + warningText/合并字段）
     status.json     构建状态（机器可读；下游源一层、站点一层都写清楚）
     report.html     构建报告（人看的，图文并茂）
 """
@@ -1456,6 +1456,40 @@ def build_ctx_from_status(status, prev_status, dropped_all, duplicates):
     }
 
 
+def choose_home(kept_sites, candidates):
+    """挑出要写进 config.json 的 `home` —— 也就是 App 启动后默认打开的首页站点 key。
+
+    ⚠️ 为什么必须有这个字段：
+      App 的 VodConfig.java:288 在没有 home（或 home 指不到任何站）时会退回
+      getSites().get(0)。而合并后的第一条是【上游优先级最高那家的第一个站】，
+      实测是肥猫的「📚┃儿童┃启蒙」—— 儿歌/启蒙片库，而且 searchable=0。
+      对家里老人来说这是最差的默认首页，纯属抓取顺序的副产品，不是任何人选的。
+
+    依据（App 侧，只读参考，没改过任何一行）：
+      · Config.java:40          `@SerializedName("home")` —— 这是个标准字段，不用新增
+      · VodConfig.java:288      filter(key == home)，找不到就回退第一条（天然降级）
+      · Site.viewName / getKey  home 里要填的是站点的 key，不是 name
+
+    两个刻意的设计决定：
+      ① **candidates 有序**（sources.json 的 home_candidates），取第一个真实存在的。
+         不做"按片库/分类数自动打分择优"：那会让默认首页每天在几个站之间跳，
+         老人开机看到的界面天天变。稳定 > 多几百页片库。
+      ② **candidates 全部落空时不写 home 字段**，而不是硬写一个。
+         写一个指向不存在的 key，等于把"为什么首页是这个站"藏进一个假配置里；
+         不写，App 回退到第一条的行为和今天完全一样，可解释、可复现。
+
+    返回 (home_key, note)：note 是给日志/报告看的人话说明，说明这个值是哪来的。
+    """
+    by_key = {str(s.get("key") or "").strip(): s for s in kept_sites
+              if isinstance(s, dict)}
+    for cand in candidates or []:
+        key = str(cand or "").strip()
+        if key and key in by_key:
+            return key, f"按 home_candidates 命中「{key}」"
+
+    return "", "home_candidates 一个都没留下，不写 home（App 回退到第一条站点）"
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="外部来源快照构建器")
     ap.add_argument("--demo", action="store_true",
@@ -1639,6 +1673,15 @@ def main() -> int:
         f"本配置由 {len([s for s in upstream_sources if s['ok']])} 个公开源聚合，"
         f"已做类存在性校验与规则清洗；仅供学习交流，请勿商用"
     )
+
+    # 首页默认站点。挑不到就【不写这个字段】（App 自己回退第一条），
+    # 绝不能写一个指不存在的 key —— 那是往产物里塞假配置。
+    home_key, home_note = choose_home(cohort.get("kept_sites") or [],
+                                      src_cfg.get("home_candidates"))
+    if home_key:
+        merged["home"] = home_key
+    log(f"首页默认站点：{home_note}")
+
     with open(OUT_CONFIG, "w", encoding="utf-8") as f:
         json.dump(merged, f, ensure_ascii=False, indent=2)
 
@@ -1674,6 +1717,7 @@ def main() -> int:
             "down": sum(1 for s in upstream_sources if not s["ok"]),
         },
         "auto_blacklisted": auto_added,
+        "home": {"key": home_key, "note": home_note},
     }
     with open(OUT_STATUS, "w", encoding="utf-8") as f:
         json.dump(status, f, ensure_ascii=False, indent=2)

@@ -428,6 +428,100 @@ class MainFlowTest(unittest.TestCase):
         self.run_main({}, {}, args=("--demo",))
         self.assertEqual(first, self.sb.read_report())
 
+    # ── 8. home（首页默认站点）──
+    #
+    # 为什么盯这个：不写 home 时 App 走 getSites().get(0)，实测是肥猫的
+    # 「📚┃儿童┃启蒙」（儿歌片库 + searchable=0），对老人是最差默认值。
+    # 这里最要紧的断言不是"home 等于某个值"，而是
+    # 【写进去的值必须真的在 sites 里】—— 写一个指不存在的 key 等于往产物里塞假配置。
+    def sources_with_home(self, *candidates, spider_source="A"):
+        d = self.two_sources(spider_source=spider_source)
+        d["home_candidates"] = list(candidates)
+        return d
+
+    def test_home_is_written_from_candidates_and_points_at_a_real_site(self):
+        """第一个候选不在、第二个在 —— 必须取第二个，且必须是 sites 里真实存在的 key。"""
+        code, log = self.run_main(
+            self.sources_with_home("nosuchkey", "a3"),
+            self.texts(doc(py_sites(6, "a")), doc(py_sites(5, "b"), spider=SPIDER_B)),
+            jar=H.jar_of_classes(["AppRJ"]))
+        self.assertEqual(code, 0, log)
+        cfg = self.sb.read_config()
+        self.assertEqual(cfg["home"], "a3")
+        self.assertIn("a3", [s["key"] for s in cfg["sites"]])
+        self.assertIn("a3", log)
+
+    def test_home_prefers_the_first_existing_candidate(self):
+        """顺序就是优先级：候选按 sources.json 写的顺序取第一个存在的。"""
+        code, log = self.run_main(
+            self.sources_with_home("b2", "a3"),
+            self.texts(doc(py_sites(6, "a")), doc(py_sites(5, "b"), spider=SPIDER_B)),
+            jar=H.jar_of_classes(["AppRJ"]))
+        self.assertEqual(code, 0, log)
+        self.assertEqual(self.sb.read_config()["home"], "b2")
+
+    def test_home_field_is_absent_when_no_candidate_survives(self):
+        """候选全落空时【不能写这个字段】：留着 App 自己回退第一条，行为可解释。"""
+        code, log = self.run_main(
+            self.sources_with_home("nosuchkey"),
+            self.texts(doc(py_sites(6, "a")), doc(py_sites(5, "b"), spider=SPIDER_B)),
+            jar=H.jar_of_classes(["AppRJ"]))
+        self.assertEqual(code, 0, log)
+        cfg = self.sb.read_config()
+        self.assertNotIn("home", cfg)
+        self.assertEqual(len(cfg["sites"]), 11)
+        self.assertEqual(self.sb.read_status()["home"]["key"], "")
+
+    def test_home_ignores_a_candidate_that_was_filtered_out(self):
+        """被规则/类存在性筛掉的站不能当首页 —— 它压根不在产物里。
+
+        夹具两个坑，写的时候都踩过：
+          · py_sites 默认 api="py_demo"，class_name_of 返回 None（走别的加载器、
+            判不了），永远不会被 missing_class 剔掉 —— 想"剔掉"必须用 csp_ 前缀；
+          · start 不能撞 key。{"key": "a1", csp_} 和 py_sites(start=1) 的第一个
+            都是 a1：csp 那个被剔掉后，py_demo 那个同 key 反而能补位进来，
+            于是"a1 被剔掉"这个前提静默失效，用例变成假通过。
+        """
+        code, log = self.run_main(
+            self.sources_with_home("a1", "b2"),
+            self.texts(doc([{"key": "a1", "name": "甲1", "api": "csp_NotInJar"}] +
+                           py_sites(5, "a", start=2)),
+                       doc(py_sites(5, "b"), spider=SPIDER_B)),
+            jar=H.jar_of_classes(["AppRJ"]))
+        self.assertEqual(code, 0, log)
+        cfg = self.sb.read_config()
+        self.assertEqual(cfg["home"], "b2")
+        self.assertNotIn("a1", [s["key"] for s in cfg["sites"]])
+        # 先确认它确实是被 missing_class 剔的，而不是被去重之类别的路径吃掉 ——
+        # 否则这个用例会在"a1 恰好因为别的原因不在"时假装通过。
+        self.assertEqual([d["key"] for d in
+                          self.sb.read_status()["sites"]["dropped"]["missing_class"]], ["a1"])
+
+
+class ChooseHomeUnitTest(unittest.TestCase):
+    """choose_home 的边界（不跑 main，直接喂数据）。"""
+
+    def test_empty_candidates_returns_empty(self):
+        key, note = build.choose_home([{"key": "a"}], [])
+        self.assertEqual(key, "")
+        self.assertIn("第一条", note)
+
+    def test_none_kept_sites_does_not_crash(self):
+        """一个站都没留下时（其余源全挂）不能 AttributeError。"""
+        key, note = build.choose_home([], ["a"])
+        self.assertEqual(key, "")
+        self.assertIn("第一条", note)
+
+    def test_skips_non_dict_and_blank_entries(self):
+        kept = [None, "x", {"key": "  "}, {"name": "没有key"}, {"key": "  a "}]
+        key, _note = build.choose_home(kept, ["nothing", "a"])
+        self.assertEqual(key, "a", "key 两边的空白要 strip 后再比")
+
+    def test_candidate_matching_is_case_sensitive(self):
+        """key 是 App 用来 filter 的原始字符串，不能自作主张改大小写。"""
+        key, _note = build.choose_home([{"key": "SNZY"}], ["snzy"])
+        self.assertEqual(key, "")
+
 
 if __name__ == "__main__":
     unittest.main()
