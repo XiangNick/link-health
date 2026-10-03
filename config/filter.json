@@ -15,7 +15,10 @@
     "csp_woog2",
     "夸快2",
     "夸快3",
-    "push_agent"
+    "push_agent",
+    "米搜",
+    "csp_PanSearch",
+    "PanSearch"
   ],
   "filter_name_patterns": [
     "失效",
