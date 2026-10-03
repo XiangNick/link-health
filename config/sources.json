@@ -1,7 +1,7 @@
 {
   "_说明": "上游源清单。spider_source 指定用哪个源的 jar —— 必须显式指定，不能依赖抓取顺序，否则 jar 一换，静态筛的结果全变。",
-  "spider_source": "wangerxiao",
-  "_spider_source为什么选王二小": "2026-10-03 用真实数据实测：同样 188 个候选站，肥猫的 jar（512 类）能留 69 站，王二小的 jar（200 类）能留 122 站。类多不等于留得多 —— 留多少取决于【这个 jar 里有没有 sites 要叫的那些类】。4K 的 jar 拿不到（对端 403），无法参与比较。这里手工写死而【不做自动择优】：自动会让每天产出在 122 / 69 之间跳，稳定比多几十个站更重要；想换随时改这一行。",
+  "spider_source": "feimao",
+  "_spider_source为什么选肥猫而不是王二小（2026-10-03 改）": "★ 这是唯一一次【不是按站点数】做的选择，理由是真机崩溃。实测：王二小的 jar（290 类）能留 87 站，肥猫的 jar（512 类）只能留 30 站 —— 按站点数该选王二小（原决策就是这么定的）。但 2026-10-03 在电视（MediaTek DBD6X Pro / Android 9 SDK28）真机实测：王二小那个 jar 里带原生保护壳（assets/wexguard_v7.so + wexguard_v8.so + wexshinidie.guard，dex 里 com.github.catvod.spider.DexNative.<clinit> 会按 Build.CPU_ABI 把 .so 落盘到 cacheDir 再 System.load），加载失败：java.lang.UnsatisfiedLinkError: dlopen failed: \".../.libwexproxy…\" has bad ELF magic → App 启动即崩、点关闭后全废。而 DexNative.<clinit> 是在 Init.getSpider(api) 第一次调用时触发的 —— 创建【任何】csp_ 站都会触发，所以【剔站绕不过去】。肥猫那个 jar 是纯 Java（zip 里只有 classes.dex + META-INF + assets/push.html，0 个 .so，dex 里 wexguard/CPU_ABI 零引用），不会触发。结论：宁要 30 个能用的站，不要 87 个一开就崩的站。想换回去改这一行即可，但换回去就必须解决那个 .so 的加载问题。",
   "home_candidates": [
     "snzy",
     "lzzy",
