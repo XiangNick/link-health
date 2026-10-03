@@ -4,14 +4,18 @@
     "csp_小学",
     "csp_初中",
     "csp_高中",
-    "push_agent",
+    "少儿教育",
+    "小学课堂",
+    "初中课堂",
+    "高中教育",
     "央视经典",
     "py_cctv_少儿",
+    "豆瓣1",
     "csp_wogg1",
     "csp_woog2",
-    "豆瓣1",
     "夸快2",
-    "夸快3"
+    "夸快3",
+    "push_agent"
   ],
   "filter_name_patterns": [
     "失效",
