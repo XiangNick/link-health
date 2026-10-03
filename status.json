@@ -1,7 +1,7 @@
 {
-  "built_at": "2026-10-03 16:56:10",
+  "built_at": "2026-10-03 17:17:53",
   "generator": "yingshi-build/1.0",
-  "build_no": 5,
+  "build_no": 6,
   "spider": {
     "source_id": "feimao",
     "source_name": "肥猫",
@@ -76,7 +76,7 @@
       "errors": [
         {
           "url": "http://tvbox.王二小放牛娃.top",
-          "error": "http://tvbox.王二小放牛娃.top → TimeoutError: timed out"
+          "error": "http://tvbox.王二小放牛娃.top → JSONDecodeError: Expecting value: line 1 column 1 (char 0)；正文开头：你好！"
         },
         {
           "url": "http://new.王二小放牛娃.top",
@@ -124,7 +124,7 @@
         },
         {
           "url": "http://我不是.摸鱼儿.com",
-          "error": "http://我不是.摸鱼儿.com → JSONDecodeError: Expecting value: line 1 column 1 (char 0)；正文开头：<!-- 204336671369 --> <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"utf-8\"> <meta name=\"viewport\" conte"
+          "error": "http://我不是.摸鱼儿.com → JSONDecodeError: Expecting value: line 1 column 1 (char 0)；正文开头：<!-- 542325427164 --> <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"utf-8\"> <meta name=\"viewport\" conte"
         },
         {
           "url": "http://我不是.摸鱼儿.xyz",
@@ -525,34 +525,6 @@
           "matched": "BiliGuard"
         },
         {
-          "key": "少儿教育",
-          "name": "📚少儿┃教育📚",
-          "api": "csp_BiliGuard",
-          "reason": "missing_class",
-          "matched": "BiliGuard"
-        },
-        {
-          "key": "小学课堂",
-          "name": "📚小学┃课堂📚",
-          "api": "csp_BiliGuard",
-          "reason": "missing_class",
-          "matched": "BiliGuard"
-        },
-        {
-          "key": "初中课堂",
-          "name": "📚初中┃课堂📚",
-          "api": "csp_BiliGuard",
-          "reason": "missing_class",
-          "matched": "BiliGuard"
-        },
-        {
-          "key": "高中教育",
-          "name": "📚高中┃课堂📚",
-          "api": "csp_BiliGuard",
-          "reason": "missing_class",
-          "matched": "BiliGuard"
-        },
-        {
           "key": "WexLunhuiDJ",
           "name": "🎼轮回┃舞曲🎼",
           "api": "csp_WexLunhuiDJGuard",
@@ -778,6 +750,30 @@
           "key": "push_agent",
           "name": "关注公众号：熊猫是只肥猫",
           "api": "csp_Push",
+          "reason": "filter_keys"
+        },
+        {
+          "key": "少儿教育",
+          "name": "📚少儿┃教育📚",
+          "api": "csp_BiliGuard",
+          "reason": "filter_keys"
+        },
+        {
+          "key": "小学课堂",
+          "name": "📚小学┃课堂📚",
+          "api": "csp_BiliGuard",
+          "reason": "filter_keys"
+        },
+        {
+          "key": "初中课堂",
+          "name": "📚初中┃课堂📚",
+          "api": "csp_BiliGuard",
+          "reason": "filter_keys"
+        },
+        {
+          "key": "高中教育",
+          "name": "📚高中┃课堂📚",
+          "api": "csp_BiliGuard",
           "reason": "filter_keys"
         },
         {
