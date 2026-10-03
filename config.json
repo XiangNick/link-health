@@ -360,20 +360,6 @@
       "changeable": 0
     },
     {
-      "key": "米搜",
-      "name": "🌖┃米搜┃网盘",
-      "type": 3,
-      "api": "csp_MiSou",
-      "ext": "http://127.0.0.1:9978/file/fatcat/kk.txt"
-    },
-    {
-      "key": "csp_PanSearch",
-      "name": "🚃┃盘搜┃网盘",
-      "type": 3,
-      "api": "csp_PanSearch",
-      "ext": "http://127.0.0.1:9978/file/fatcat/token.txt"
-    },
-    {
       "key": "儿童",
       "name": "📚┃儿童┃启蒙",
       "type": 3,
@@ -782,16 +768,6 @@
       "filterable": 1,
       "ext": "http://rihou.vip:55/lib/玩偶运输车.json",
       "jar": "http://rihou.vip:55/lib/ttkx.jar;md5;c253e1930a210fa5141e5418f1f90949"
-    },
-    {
-      "key": "PanSearch",
-      "name": "🙀┃盘Se┃搜索",
-      "type": 3,
-      "api": "csp_PanSearch",
-      "searchable": 1,
-      "quickSearch": 1,
-      "changeable": 0,
-      "ext": "http://127.0.0.1:9978/file/tvfan/token.txt+4k|auto|fhd"
     },
     {
       "key": "阿里云盘登录",

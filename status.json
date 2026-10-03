@@ -1,7 +1,7 @@
 {
-  "built_at": "2026-10-03 17:17:53",
+  "built_at": "2026-10-03 23:37:07",
   "generator": "yingshi-build/1.0",
-  "build_no": 6,
+  "build_no": 7,
   "spider": {
     "source_id": "feimao",
     "source_name": "肥猫",
@@ -76,7 +76,7 @@
       "errors": [
         {
           "url": "http://tvbox.王二小放牛娃.top",
-          "error": "http://tvbox.王二小放牛娃.top → JSONDecodeError: Expecting value: line 1 column 1 (char 0)；正文开头：你好！"
+          "error": "http://tvbox.王二小放牛娃.top → TimeoutError: timed out"
         },
         {
           "url": "http://new.王二小放牛娃.top",
@@ -124,7 +124,7 @@
         },
         {
           "url": "http://我不是.摸鱼儿.com",
-          "error": "http://我不是.摸鱼儿.com → JSONDecodeError: Expecting value: line 1 column 1 (char 0)；正文开头：<!-- 542325427164 --> <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"utf-8\"> <meta name=\"viewport\" conte"
+          "error": "http://我不是.摸鱼儿.com → JSONDecodeError: Expecting value: line 1 column 1 (char 0)；正文开头：<!-- 853229659419 --> <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"utf-8\"> <meta name=\"viewport\" conte"
         },
         {
           "url": "http://我不是.摸鱼儿.xyz",
@@ -220,7 +220,7 @@
   ],
   "sites": {
     "total_input": 152,
-    "kept": 68,
+    "kept": 65,
     "dropped": {
       "missing_class": [
         {
@@ -723,6 +723,18 @@
       ],
       "by_rule": [
         {
+          "key": "米搜",
+          "name": "🌖┃米搜┃网盘",
+          "api": "csp_MiSou",
+          "reason": "filter_keys"
+        },
+        {
+          "key": "csp_PanSearch",
+          "name": "🚃┃盘搜┃网盘",
+          "api": "csp_PanSearch",
+          "reason": "filter_keys"
+        },
+        {
           "key": "csp_少儿",
           "name": "📚┃少儿┃教育",
           "api": "csp_Bili",
@@ -792,6 +804,12 @@
           "key": "央视经典",
           "name": "📺┃央视┃经典",
           "api": "csp_Bili",
+          "reason": "filter_keys"
+        },
+        {
+          "key": "PanSearch",
+          "name": "🙀┃盘Se┃搜索",
+          "api": "csp_PanSearch",
           "reason": "filter_keys"
         },
         {
