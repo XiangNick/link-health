@@ -5,6 +5,14 @@
   "_优先级": "sources 的顺序 = 优先级；合并时同名 site 保留先出现的那个。这个顺序还决定默认首页：第一个源里第一个被保留的站就是 sites[0]（产物不再写 home 字段，App 不读它）。",
   "sources": [
     {
+      "id": "legacy",
+      "name": "肥猫老站（自备·从 git 历史恢复）",
+      "urls": [
+        "https://raw.githubusercontent.com/XiangNick/link-health/main/config/legacy-feimao.json",
+        "https://cdn.jsdelivr.net/gh/XiangNick/link-health@main/config/legacy-feimao.json"
+      ]
+    },
+    {
       "id": "feimao",
       "name": "肥猫",
       "urls": [
@@ -98,5 +106,6 @@
         "https://9877.kstore.space/AnotherD/api.json"
       ]
     }
-  ]
+  ],
+  "_legacy说明": "legacy 源 = 肥猫源挂掉前抓到的它自有站点（潮流/熊猫/一碗/金牌…共 32 个），从 git 历史恢复后固化成我们自己的文件；raw.githubusercontent 优先（构建机直连、最新），jsDelivr 兜底。"
 }
