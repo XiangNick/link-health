@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
 <meta name="description" content="链接巡检报告：本次巡检的结果、哪些没通过、为什么。">
-<title>链接巡检报告 · 2026-10-07 03:13:21</title>
+<title>链接巡检报告 · 2026-10-07 15:54:22</title>
 <style>
 /* ═══════════════════════════════════════════════════════════════
    一、令牌层 —— 沿用 App「冷调影院」设计系统，一个色值都不新造
@@ -743,22 +743,22 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
       <span class="sep" aria-hidden="true">/</span>
       <span>yingshi-build/1.0</span>
       <span class="sep" aria-hidden="true">/</span>
-      <span>第 14 份台账</span>
+      <span>第 15 份台账</span>
     </p>
 
     <h1 class="reveal" style="--i:1">链接巡检报告<span class="light"> · 每日裁剪台账</span></h1>
 
     <div class="stamp reveal" style="--i:2">
       <span class="stamp-k">构建时间</span>
-      <span class="stamp-v accent">2026-10-07 03:13:21</span>
+      <span class="stamp-v accent">2026-10-07 15:54:22</span>
       <span class="stamp-k">上游源</span>
       <span class="stamp-v">10 个</span>
       <span class="stamp-k">产出站点</span>
-      <span class="stamp-v">65 个</span>
+      <span class="stamp-v">88 个</span>
     </div>
 
     <p class="lede reveal" style="--i:3">
-      汇总进来 <strong>152 个源</strong>，剔掉 <strong>87 个跑不起来的</strong>，留下 <strong>65 个能用的</strong>。
+      汇总进来 <strong>115 个源</strong>，剔掉 <strong>27 个跑不起来的</strong>，留下 <strong>88 个能用的</strong>。
     </p>
   </header>
 
@@ -778,9 +778,9 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
           <h3 class="kpi-label">上游源</h3>
           <div class="kpi-body">
             <div class="tally">
-              <span class="t t-live"><span class="n">3</span><span class="u">活</span></span>
+              <span class="t t-live"><span class="n">2</span><span class="u">活</span></span>
               <span class="t t-cache"><span class="n">0</span><span class="u">缓存</span></span>
-              <span class="t t-down"><span class="n">7</span><span class="u">挂</span></span>
+              <span class="t t-down"><span class="n">8</span><span class="u">挂</span></span>
             </div>
             <p class="kpi-foot">共 <b>10</b> 个上游源。cache 是上次的缓存，不算今天抓到。</p>
           </div>
@@ -791,11 +791,11 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
           <h3 class="kpi-label">站点</h3>
           <div class="kpi-body">
             <div class="cutmath">
-              <span class="from">152</span>
+              <span class="from">115</span>
               <span class="arrow" aria-hidden="true">→</span>
-              <span class="to">65</span>
+              <span class="to">88</span>
             </div>
-            <p class="kpi-foot">剔掉 <b>87</b> 个（主因是"类不在选定的那个包里"），留下 <b>65</b> 个，每个都能跑。</p>
+            <p class="kpi-foot">剔掉 <b>27</b> 个（主因是"类不在选定的那个包里"），留下 <b>88</b> 个，每个都能跑。</p>
           </div>
         </article>
 
@@ -803,8 +803,8 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
         <article class="kpi reveal" style="--i:7">
           <h3 class="kpi-label">spider</h3>
           <div class="kpi-body">
-            <div class="spider-name">肥猫 <code>feimao</code></div>
-            <p class="kpi-foot">这批源共用这一个程序包，里面 <b>512</b> 个类。装进去的源只能跑得起"类就在这 <b>512</b> 个里"的那些 —— 换一个包，被剔掉的名单就整个不一样。</p>
+            <div class="spider-name">王二小 <code>wangerxiao</code></div>
+            <p class="kpi-foot">这批源共用这一个程序包，里面 <b>290</b> 个类。装进去的源只能跑得起"类就在这 <b>290</b> 个里"的那些 —— 换一个包，被剔掉的名单就整个不一样。</p>
           </div>
         </article>
 
@@ -813,7 +813,7 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
           <h3 class="kpi-label">对比上次</h3>
           <div class="kpi-body">
             <ul class="delta">
-              <li><span class="dk">死源</span><span class="dv bad">+0</span></li>
+              <li><span class="dk">死源</span><span class="dv bad">+1</span></li>
               <li><span class="dk">新增源</span><span class="dv good">0 个</span></li>
               <li><span class="dk">消失源</span><span class="dv neu">0 个</span></li>
             </ul>
@@ -827,9 +827,9 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
     <section id="why" aria-labelledby="why-h">
       <div class="sec-head reveal" style="--i:9">
         <span class="sec-num" aria-hidden="true">02</span>
-        <h2 id="why-h">为什么砍掉 <span class="light">这 87 个</span></h2>
+        <h2 id="why-h">为什么砍掉 <span class="light">这 27 个</span></h2>
       </div>
-      <p class="sec-sub">柱子的长度就是砍掉的数量。最长的这一条是 71 个。</p>
+      <p class="sec-sub">柱子的长度就是砍掉的数量。最长的这一条是 18 个。</p>
 
       <div class="pane reveal" style="--i:10">
         <div class="ledger">
@@ -846,15 +846,15 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
           <div class="bars" id="bars">
             <div class="bar" style="--i:0">
               <span class="bar-label"></span>
-              <span class="bar-track"><span class="bar-fill" data-w="71"></span></span>
-              <span class="bar-val">71</span>
+              <span class="bar-track"><span class="bar-fill" data-w="18"></span></span>
+              <span class="bar-val">18</span>
             </div>
           </div>
 
           <p class="bar-tail">
             <span>长尾</span>
             <span><b>零散家族 0 个</b> ，每个只砍掉 1 个</span>
-            <span>71</span>
+            <span>18</span>
           </p>
         </div>
 
@@ -872,7 +872,7 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
             这就是"越搜越慢、好多源永远搜不出东西"的来源。
           </p>
           <p style="margin-top:10px">
-            上游那份配置最大的毛病就在这：<strong>152 个源里有 87 个永远出不了结果</strong>，
+            上游那份配置最大的毛病就在这：<strong>115 个源里有 27 个永远出不了结果</strong>，
             却全都写在里面。我们不是修好了它 —— 我们只是<strong>把跑不起来的剔掉，让留下来的每个都能用</strong>。
           </p>
 
@@ -907,7 +907,7 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
 
       <div class="tbl-scroll reveal" style="--i:10">
         <table>
-          <caption>构建时刻的快照 · 2026-10-07 03:13:21</caption>
+          <caption>构建时刻的快照 · 2026-10-07 15:54:22</caption>
           <thead>
             <tr>
               <th scope="col">源</th>
@@ -920,12 +920,12 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
           <tbody>
             <!-- ★ $sources_table：完整 <tr class="src-row …"> 序列。
                  结构见文件顶部「渲染契约 · 片段结构规范」。 -->
-            <tr class="src-row">
+            <tr class="src-row is-down">
               <th scope="row" class="src-name">肥猫 <span class="src-id">feimao</span></th>
-              <td><span class="src-status live"><span class="pip" aria-hidden="true"></span>live</span></td>
-              <td class="num">39</td>
-              <td class="url">http://肥猫.net/tv</td>
-              <td class="note">本次 spider jar 的来源</td>
+              <td><span class="src-status down"><span class="pip" aria-hidden="true"></span>down</span></td>
+              <td class="num">—</td>
+              <td class="url">—</td>
+              <td class="note">http://肥猫.com/ → JSONDecodeError: Expecting value: line 1 column 1 (c… · http://肥猫.com/tv → JSONDecodeError: Expecting value: line 1 column 1 … · http://肥猫.net/tv → HTTP 522 Connection Timeout with Origin Server · http://hello.肥猫.com/ → JSONDecodeError: Expecting value: line 1 colum… · https://6296.kstore.vip/facat.json → HTTP 401</td>
             </tr>
             <tr class="src-row is-down">
               <th scope="row" class="src-name">饭太硬 <span class="src-id">fantaiying</span></th>
@@ -939,7 +939,7 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
               <td><span class="src-status live"><span class="pip" aria-hidden="true"></span>live</span></td>
               <td class="num">63</td>
               <td class="url">https://d.kstore.dev/download/9280/wex.json</td>
-              <td class="note">本次抓取成功</td>
+              <td class="note">本次 spider jar 的来源</td>
             </tr>
             <tr class="src-row is-down">
               <th scope="row" class="src-name">讴歌 <span class="src-id">ouge</span></th>
@@ -967,7 +967,7 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
               <td><span class="src-status down"><span class="pip" aria-hidden="true"></span>down</span></td>
               <td class="num">—</td>
               <td class="url">—</td>
-              <td class="note">http://www.mpanso.com/小米/DEMO.json → HTTP 404 Not Found · https://www.mpanso.com/%E5%B0%8F%E7%B1%B3/DEMO.json → HTTP 404 Not Fo… · http://miqk.cc/小米/DEMO.json → URLError: &lt;urlopen error [Errno -3] Tem…</td>
+              <td class="note">http://www.mpanso.com/小米/DEMO.json → URLError: &lt;urlopen error timed o… · https://www.mpanso.com/%E5%B0%8F%E7%B1%B3/DEMO.json → URLError: &lt;urlo… · http://miqk.cc/小米/DEMO.json → URLError: &lt;urlopen error [Errno -3] Tem…</td>
             </tr>
             <tr class="src-row is-down">
               <th scope="row" class="src-name">巧记 <span class="src-id">qiaoji</span></th>
@@ -998,7 +998,7 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
         <span class="co-tag">徽章口径</span>
         <p>
           上游把「用缓存」也算成功，所以它写「10/10 可用」。
-          今天真正抓到的只有 <strong>3 个</strong>，还有 0 个用的是旧缓存 —— 能用，但不新。
+          今天真正抓到的只有 <strong>2 个</strong>，还有 0 个用的是旧缓存 —— 能用，但不新。
         </p>
       </div>
     </section>
@@ -1017,9 +1017,9 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
         <section class="group reveal">
           <h3 style="margin:0">
             <button class="acc-btn" type="button" aria-expanded="false" aria-controls="g1">
-              <span class="acc-count">71</span>
+              <span class="acc-count">18</span>
               <span class="acc-titles">
-                <span class="acc-title">类不在包里（71）</span>
+                <span class="acc-title">类不在包里（18）</span>
                 <span class="acc-note">这一份只加载了一个程序包；这些站要用的类不在里面 —— 不剔掉，App 加载时就抛 ClassNotFoundException，每次搜索还白等超时</span>
               </span>
               <span class="acc-caret" aria-hidden="true"></span>
@@ -1033,48 +1033,48 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
               <p class="pi-hint">随便挑几个看一眼。</p>
               <div class="samples">
                   <div class="sample">
-                    <span class="s-key">Wex115shareGuard</span>
-                    <span class="s-name">💓我的┃115💓‍</span>
-                    <span class="s-api">csp_Wex115shareGuard</span>
-                  </div>
-                  <div class="sample">
                     <span class="s-key">Kunyu77</span>
                     <span class="s-name">👒┃七七┃App</span>
                     <span class="s-api">csp_Kunyu77</span>
                   </div>
                   <div class="sample">
-                    <span class="s-key">AListGuard</span>
-                    <span class="s-name">🥇Alist┃DIY🥇</span>
-                    <span class="s-api">csp_AListGuard</span>
+                    <span class="s-key">Bili</span>
+                    <span class="s-name">🅱┃哔哔┃合集</span>
+                    <span class="s-api">csp_Bili</span>
                   </div>
                   <div class="sample">
-                    <span class="s-key">DoubanGuard</span>
-                    <span class="s-name">🐮【免费分享】🐮</span>
-                    <span class="s-api">csp_DoubanGuard</span>
+                    <span class="s-key">Bili</span>
+                    <span class="s-name">⚡┃明星┃MV</span>
+                    <span class="s-api">csp_Bili</span>
                   </div>
                   <div class="sample">
-                    <span class="s-key">DoubanGuard</span>
-                    <span class="s-name">🐮【更新日期:20260911】🐮</span>
-                    <span class="s-api">csp_DoubanGuard</span>
+                    <span class="s-key">PanSou</span>
+                    <span class="s-name">🦊┃盘搜┃搜索</span>
+                    <span class="s-api">csp_PanSou</span>
                   </div>
                   <div class="sample">
-                    <span class="s-key">DoubanGuard</span>
-                    <span class="s-name">⬇️【网盘类先扫码】⬇️</span>
-                    <span class="s-api">csp_DoubanGuard</span>
+                    <span class="s-key">UpYun</span>
+                    <span class="s-name">😻┃Up搜┃搜索</span>
+                    <span class="s-api">csp_UpYun</span>
+                  </div>
+                  <div class="sample">
+                    <span class="s-key">WoGG</span>
+                    <span class="s-name">👽┃玩偶┃4K①</span>
+                    <span class="s-api">csp_WoGG</span>
                   </div>
               </div>
 
               <!-- ★ $drop_g1_chart：组 1 的完整分布表（整段 HTML 由脚本给，
                    空串则整块不出现）。结构见文件顶部「渲染契约 · 片段结构规范」。 -->
               <div class="foldmore">
-                <h4>完整分布 · 合计 71 个</h4>
+                <h4>完整分布 · 合计 18 个</h4>
                 <div class="inner-scroll" style="margin-top:10px">
                   <table>
                     <caption class="sr">被砍站点的 api 家族完整计数</caption>
                     <thead><tr><th scope="col">api 家族</th><th scope="col" class="num">数量</th><th scope="col">判定</th></tr></thead>
                     <tbody>
-                              <tr><td class="a"></td><td class="num">71</td><td class="r">包里没有</td></tr>
-                      <tr class="total-row"><td class="k">合计</td><td class="num">71</td><td class="r">全部砍掉</td></tr>
+                              <tr><td class="a"></td><td class="num">18</td><td class="r">包里没有</td></tr>
+                      <tr class="total-row"><td class="k">合计</td><td class="num">18</td><td class="r">全部砍掉</td></tr>
                     </tbody>
                   </table>
                 </div>
@@ -1088,39 +1088,19 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
                 <!-- ★ $dropped_missing_class：<li class="drop-item"> 序列（家族 / 被砍站数 / 判定）。
                      结构见文件顶部「渲染契约 · 片段结构规范」。 -->
                 <li class="drop-item">
-                  <span class="drop-key">115</span>
-                  <span class="drop-name">💓我的┃115💓‍</span>
-                  <span class="drop-reason">Wex115shareGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
                   <span class="drop-key">77</span>
                   <span class="drop-name">👒┃七七┃App</span>
                   <span class="drop-reason">Kunyu77 包里没有</span>
                 </li>
                 <li class="drop-item">
-                  <span class="drop-key">AList</span>
-                  <span class="drop-name">🥇Alist┃DIY🥇</span>
-                  <span class="drop-reason">AListGuard 包里没有</span>
+                  <span class="drop-key">Bili</span>
+                  <span class="drop-name">🅱┃哔哔┃合集</span>
+                  <span class="drop-reason">Bili 包里没有</span>
                 </li>
                 <li class="drop-item">
-                  <span class="drop-key">Douban</span>
-                  <span class="drop-name">🐮【免费分享】🐮</span>
-                  <span class="drop-reason">DoubanGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">Doubana</span>
-                  <span class="drop-name">🐮【更新日期:20260911】🐮</span>
-                  <span class="drop-reason">DoubanGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">Doubanaaa</span>
-                  <span class="drop-name">⬇️【网盘类先扫码】⬇️</span>
-                  <span class="drop-reason">DoubanGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">Iktv</span>
-                  <span class="drop-name">🎤KTV┃音乐🎤</span>
-                  <span class="drop-reason">WexIktvGuard 包里没有</span>
+                  <span class="drop-key">MV_vod</span>
+                  <span class="drop-name">⚡┃明星┃MV</span>
+                  <span class="drop-reason">Bili 包里没有</span>
                 </li>
                 <li class="drop-item">
                   <span class="drop-key">PanSou</span>
@@ -1133,229 +1113,9 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
                   <span class="drop-reason">UpYun 包里没有</span>
                 </li>
                 <li class="drop-item">
-                  <span class="drop-key">Wex275tingshu</span>
-                  <span class="drop-name">🎃‍极品┃听书🎃</span>
-                  <span class="drop-reason">Wex275tingshuGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">Wex97pansoGuard</span>
-                  <span class="drop-name">🎠九七┃综合🎠</span>
-                  <span class="drop-reason">Wex97pansoGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">WexHaiYinsoGuard</span>
-                  <span class="drop-name">🎠海音┃综合🎠</span>
-                  <span class="drop-reason">WexHaiYinsoGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">WexLunhuiDJ</span>
-                  <span class="drop-name">🎼轮回┃舞曲🎼</span>
-                  <span class="drop-reason">WexLunhuiDJGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">WexNewBiLiLive</span>
-                  <span class="drop-name">🅱️哔哩┃直播🅱️</span>
-                  <span class="drop-reason">WexNewBiLiLiveGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">WexNewDouYu</span>
-                  <span class="drop-name">🐳斗鱼┃直播🐳</span>
-                  <span class="drop-reason">WexNewDouYuGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">WexNewHuYa</span>
-                  <span class="drop-name">🐯‍虎牙┃直播🐯‍</span>
-                  <span class="drop-reason">WexNewHuYaGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">WexWo123panGuard</span>
-                  <span class="drop-name">💓我的┃123💓‍</span>
-                  <span class="drop-reason">WexWo123panGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">WexbaidusoGuard</span>
-                  <span class="drop-name">🎠给力┃百度🎠</span>
-                  <span class="drop-reason">WexbaidusoGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">Wexbaobaobashi</span>
-                  <span class="drop-name">👼宝宝┃儿歌👼</span>
-                  <span class="drop-reason">WexbaobaobashiGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">Wexbeiwa</span>
-                  <span class="drop-name">👼贝贝┃儿歌👼</span>
-                  <span class="drop-reason">WexbeiwaGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">Wexbiliys</span>
-                  <span class="drop-name">🅱‍哔哔┃影视🅱‍</span>
-                  <span class="drop-reason">WexbiliysGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">WexbttwoGuard</span>
-                  <span class="drop-name">🎇大鼻涕┃秒播🎇</span>
-                  <span class="drop-reason">WexbttwoGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">Wexconfig</span>
-                  <span class="drop-name">🐮通用类型┃配置中心🐮</span>
-                  <span class="drop-reason">WexconfigGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">Wexduanju001</span>
-                  <span class="drop-name">🍉短剧┃神品🍉</span>
-                  <span class="drop-reason">Wexduanju001Guard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">Wexduanjuhema</span>
-                  <span class="drop-name">🍉短剧┃仙品🍉</span>
-                  <span class="drop-reason">WexduanjuhemaGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">Wexduanjusuipian</span>
-                  <span class="drop-name">🍉短剧┃速播🍉</span>
-                  <span class="drop-reason">WexduanjusuipianGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">Wexduanjuvmp</span>
-                  <span class="drop-name">🍉短剧┃瞬播🍉</span>
-                  <span class="drop-reason">WexduanjuvmpGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">Wexduanjuvop</span>
-                  <span class="drop-name">🍉短剧┃秒播🍉</span>
-                  <span class="drop-reason">WexduanjuvopGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">WexduoduoziyuanGuard</span>
-                  <span class="drop-name">💓多多┃4K💓</span>
-                  <span class="drop-reason">WexduoduoziyuanGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">Wexemby</span>
-                  <span class="drop-name">🀄️emby┃4K🀄️</span>
-                  <span class="drop-reason">WexembyGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">Wexergeduoduo</span>
-                  <span class="drop-name">👼多多┃儿歌👼</span>
-                  <span class="drop-reason">WexergeduoduoGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">Wexhanxiaoquan</span>
-                  <span class="drop-name">💥韩剧┃秒播💥</span>
-                  <span class="drop-reason">WexhanxiaoquanGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">WexhubanGuard</span>
-                  <span class="drop-name">💓虎斑┃4K💓</span>
-                  <span class="drop-reason">WexhubanGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">WexikanbotGuard</span>
-                  <span class="drop-name">🎇爱看┃采集🎇</span>
-                  <span class="drop-reason">WexikanbotGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">WexkuihuatvGuard</span>
-                  <span class="drop-name">💥葵花┃影视💥</span>
-                  <span class="drop-reason">WexkuihuatvGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">Wexlaobaitingshu</span>
-                  <span class="drop-name">🎃‍白兔┃听书🎃</span>
-                  <span class="drop-reason">WexlaobaitingshuGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">Wexliyuan</span>
-                  <span class="drop-name">🎎戏曲┃秒播🎎</span>
-                  <span class="drop-reason">WexliyuanGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">Wexmuougg</span>
-                  <span class="drop-name">💓木偶┃4K💓</span>
-                  <span class="drop-reason">WexmuouggGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">Wexnullname</span>
-                  <span class="drop-name">💓无名┃4K💓</span>
-                  <span class="drop-reason">WexnullnameGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">Wexokconfig</span>
-                  <span class="drop-name">🐮影视专用┃配置中心🐮</span>
-                  <span class="drop-reason">WexokconfigGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">Wexpan123ziyuanGuard</span>
-                  <span class="drop-name">💓123┃4K💓</span>
-                  <span class="drop-reason">Wexpan123ziyuanGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">WexshuangzixingGuard</span>
-                  <span class="drop-name">💓双星┃4K💓</span>
-                  <span class="drop-reason">WexshuangzixingGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">Wextangdou</span>
-                  <span class="drop-name">💃跳舞┃教学💃</span>
-                  <span class="drop-reason">WextangdouGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">Wextuxiaobei</span>
-                  <span class="drop-name">👼兔兔┃儿歌👼</span>
-                  <span class="drop-reason">WextuxiaobeiGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">Wextyso</span>
-                  <span class="drop-name">🎠给力┃天逸🎠</span>
-                  <span class="drop-reason">WextysoGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">Wexwencai</span>
-                  <span class="drop-name">🌺文才┃秒播🌺</span>
-                  <span class="drop-reason">WexwencaiGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">baidu</span>
-                  <span class="drop-name">💓我的┃百度💓‍</span>
-                  <span class="drop-reason">WexWoBaiduPanGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">bili</span>
-                  <span class="drop-name">🅱哔哔┃合集🅱</span>
-                  <span class="drop-reason">BiliGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">biliych</span>
-                  <span class="drop-name">🅱哔哔┃歌曲🅱</span>
-                  <span class="drop-reason">BiliGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">csp_Nmys</span>
-                  <span class="drop-name">🎇伯伯┃秒播🎇</span>
-                  <span class="drop-reason">WexNmysGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">csp_Nmys</span>
-                  <span class="drop-name">🌾┃农民┃直连</span>
-                  <span class="drop-reason">Nmys 包里没有</span>
-                </li>
-                <li class="drop-item">
                   <span class="drop-key">csp_WoGG</span>
                   <span class="drop-name">👽┃玩偶┃4K①</span>
                   <span class="drop-reason">WoGG 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">tianyi</span>
-                  <span class="drop-name">💓我的┃天逸💓‍</span>
-                  <span class="drop-reason">WexWo189Guard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">xunlei</span>
-                  <span class="drop-name">💓我的┃讯蕾💓‍</span>
-                  <span class="drop-reason">WexWoXunLeiPanGuard 包里没有</span>
                 </li>
                 <li class="drop-item">
                   <span class="drop-key">一起看</span>
@@ -1373,11 +1133,6 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
                   <span class="drop-reason">Cs1369 包里没有</span>
                 </li>
                 <li class="drop-item">
-                  <span class="drop-key">优熙</span>
-                  <span class="drop-name">💓我的┃优熙💓‍</span>
-                  <span class="drop-reason">WexWoucpanGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
                   <span class="drop-key">南坊</span>
                   <span class="drop-name">🎃┃南坊┃App</span>
                   <span class="drop-reason">AppMao 包里没有</span>
@@ -1393,34 +1148,19 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
                   <span class="drop-reason">Yj1211 包里没有</span>
                 </li>
                 <li class="drop-item">
-                  <span class="drop-key">夸克</span>
-                  <span class="drop-name">💓我的┃夸克💓‍</span>
-                  <span class="drop-reason">WexWoquarkpanGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
                   <span class="drop-key">小柚</span>
                   <span class="drop-name">🍊┃小柚┃App</span>
                   <span class="drop-reason">AppSK 包里没有</span>
                 </li>
                 <li class="drop-item">
-                  <span class="drop-key">异动</span>
-                  <span class="drop-name">💓我的┃异动💓‍</span>
-                  <span class="drop-reason">WexWoydpanGuard 包里没有</span>
+                  <span class="drop-key">戏 曲</span>
+                  <span class="drop-name">👵┃老年┃戏曲</span>
+                  <span class="drop-reason">Bili 包里没有</span>
                 </li>
                 <li class="drop-item">
-                  <span class="drop-key">新6V</span>
-                  <span class="drop-name">🛩️新6V┃P2P🛩</span>
-                  <span class="drop-reason">WexXb6vGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">玩偶</span>
-                  <span class="drop-name">💓‍玩偶┃4K💓‍</span>
-                  <span class="drop-reason">WoggGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">瓜子看球</span>
-                  <span class="drop-name">🌐瓜子┃体育🌐</span>
-                  <span class="drop-reason">WexGZsportGuard 包里没有</span>
+                  <span class="drop-key">相声小品</span>
+                  <span class="drop-name">😍┃相声┃小品</span>
+                  <span class="drop-reason">Bili 包里没有</span>
                 </li>
                 <li class="drop-item">
                   <span class="drop-key">繁星</span>
@@ -1428,19 +1168,14 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
                   <span class="drop-reason">AppMao 包里没有</span>
                 </li>
                 <li class="drop-item">
-                  <span class="drop-key">自定义</span>
-                  <span class="drop-name">🥇全能┃DIY🥇</span>
-                  <span class="drop-reason">WexdiyGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
                   <span class="drop-key">萌米</span>
                   <span class="drop-name">👀┃萌米┃App</span>
                   <span class="drop-reason">AppMao 包里没有</span>
                 </li>
                 <li class="drop-item">
-                  <span class="drop-key">賤賤</span>
-                  <span class="drop-name">💥賤片┃p2p💥</span>
-                  <span class="drop-reason">WexJianpianGuard 包里没有</span>
+                  <span class="drop-key">豆瓣</span>
+                  <span class="drop-name">🔥公众号：聚玩盒</span>
+                  <span class="drop-reason">DouDou 包里没有</span>
                 </li>
               </ul>
             </div>
@@ -1451,9 +1186,9 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
         <section class="group reveal">
           <h3 style="margin:0">
             <button class="acc-btn" type="button" aria-expanded="false" aria-controls="g2">
-              <span class="acc-count">16</span>
+              <span class="acc-count">9</span>
               <span class="acc-titles">
-                <span class="acc-title">规则命中（16）</span>
+                <span class="acc-title">规则命中（9）</span>
                 <span class="acc-note">教学课 / 广告 / 停更的源，搜剧只会返回垃圾结果</span>
               </span>
               <span class="acc-caret" aria-hidden="true"></span>
@@ -1471,36 +1206,6 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
                 <li class="drop-item">
                   <span class="drop-key">PanSearch</span>
                   <span class="drop-name">🙀┃盘Se┃搜索</span>
-                  <span class="drop-reason">按 key 过滤</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">csp_PanSearch</span>
-                  <span class="drop-name">🚃┃盘搜┃网盘</span>
-                  <span class="drop-reason">按 key 过滤</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">csp_初中</span>
-                  <span class="drop-name">📚┃初中┃课堂</span>
-                  <span class="drop-reason">按 key 过滤</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">csp_小学</span>
-                  <span class="drop-name">📚┃小学┃课堂</span>
-                  <span class="drop-reason">按 key 过滤</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">csp_少儿</span>
-                  <span class="drop-name">📚┃少儿┃教育</span>
-                  <span class="drop-reason">按 key 过滤</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">csp_高中</span>
-                  <span class="drop-name">📚┃高中┃课堂</span>
-                  <span class="drop-reason">按 key 过滤</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">push_agent</span>
-                  <span class="drop-name">关注公众号：熊猫是只肥猫</span>
                   <span class="drop-reason">按 key 过滤</span>
                 </li>
                 <li class="drop-item">
@@ -1539,11 +1244,6 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
                   <span class="drop-reason">按 key 过滤</span>
                 </li>
                 <li class="drop-item">
-                  <span class="drop-key">米搜</span>
-                  <span class="drop-name">🌖┃米搜┃网盘</span>
-                  <span class="drop-reason">按 key 过滤</span>
-                </li>
-                <li class="drop-item">
                   <span class="drop-key">高中教育</span>
                   <span class="drop-name">📚高中┃课堂📚</span>
                   <span class="drop-reason">按 key 过滤</span>
@@ -1557,9 +1257,9 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
         <section class="group reveal">
           <h3 style="margin:0">
             <button class="acc-btn" type="button" aria-expanded="false" aria-controls="g3">
-              <span class="acc-count">3</span>
+              <span class="acc-count">1</span>
               <span class="acc-titles">
-                <span class="acc-title">同名重复（3）</span>
+                <span class="acc-title">同名重复（1）</span>
                 <span class="acc-note">上游遇到重名源会改名保留，同一个源出现了好几份</span>
               </span>
               <span class="acc-caret" aria-hidden="true"></span>
@@ -1575,19 +1275,9 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
                 <!-- ★ $dropped_duplicate：<li class="drop-item"> 序列（第二列是状态徽章）。
                      结构见文件顶部「渲染契约 · 片段结构规范」。 -->
                 <li class="drop-item">
-                  <span class="drop-key">看球</span>
-                  <span class="drop-name">🌐88┃体育🌐</span>
-                  <span class="drop-reason">只留 肥猫 的</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">荐片</span>
-                  <span class="drop-name">🧲┃荐片┃磁力</span>
-                  <span class="drop-reason">只留 肥猫 的</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">豆瓣</span>
-                  <span class="drop-name">🔥公众号：聚玩盒</span>
-                  <span class="drop-reason">只留 肥猫 的</span>
+                  <span class="drop-key">csp_Nmys</span>
+                  <span class="drop-name">🌾┃农民┃直连</span>
+                  <span class="drop-reason">只留 王二小 的</span>
                 </li>
               </ul>
 
@@ -1596,20 +1286,20 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
               </p>
 
               <!-- 重复量对比条：斜纹＝上游含重复，白＝去重后 -->
-              <div class="dupbar" role="img" aria-label="上游单仓 152 个站（含 3 个改名重复），我们的 65 个站，没有重复。">
+              <div class="dupbar" role="img" aria-label="上游单仓 115 个站（含 1 个改名重复），我们的 88 个站，没有重复。">
                 <div class="dupbar-row">
                   <span class="dupbar-lab">上游单仓</span>
                   <span class="dupbar-track">
                     <span class="dupbar-fill up" style="--w:100%" data-w="100"></span>
                   </span>
-                  <span class="dupbar-val"><b>152</b> 个（含 3 个改名重复）</span>
+                  <span class="dupbar-val"><b>115</b> 个（含 1 个改名重复）</span>
                 </div>
                 <div class="dupbar-row">
                   <span class="dupbar-lab">我们的</span>
                   <span class="dupbar-track">
-                    <span class="dupbar-fill ours" style="--w:42.8%" data-w="42.8"></span>
+                    <span class="dupbar-fill ours" style="--w:76.5%" data-w="76.5"></span>
                   </span>
-                  <span class="dupbar-val"><b>65</b> 个（去重后）</span>
+                  <span class="dupbar-val"><b>88</b> 个（去重后）</span>
                 </div>
               </div>
             </div>
@@ -1629,33 +1319,33 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
       <div class="compare">
         <article class="cmp reveal" style="--i:10">
           <p class="cmp-k">上游单仓</p>
-          <p class="cmp-big"><span class="v">152</span><span class="u">个站</span></p>
-          <p class="cmp-d">其中 <b>84</b> 个站的代码不在包里，打开就失败，每个还要白等一次超时。</p>
-          <div class="dual" role="img" aria-label="上游单仓 152 个站：用不了 84 个，能用 68 个。">
+          <p class="cmp-big"><span class="v">115</span><span class="u">个站</span></p>
+          <p class="cmp-d">其中 <b>26</b> 个站的代码不在包里，打开就失败，每个还要白等一次超时。</p>
+          <div class="dual" role="img" aria-label="上游单仓 115 个站：用不了 26 个，能用 89 个。">
             <div class="dual-bar">
-              <span class="seg bad" style="--w:55.3%" data-w="55.3">84</span>
-              <span class="seg ok" style="--w:44.7%" data-w="44.7">68</span>
+              <span class="seg bad" style="--w:22.6%" data-w="22.6">26</span>
+              <span class="seg ok" style="--w:77.4%" data-w="77.4">89</span>
             </div>
             <div class="dual-scale">
               <span>0</span>
-              <span>用不了 84 · 能用 68</span>
-              <span>152</span>
+              <span>用不了 26 · 能用 89</span>
+              <span>115</span>
             </div>
           </div>
         </article>
 
         <article class="cmp ours reveal" style="--i:11">
           <p class="cmp-k">我们的</p>
-          <p class="cmp-big"><span class="v">65</span><span class="u">个站</span></p>
+          <p class="cmp-big"><span class="v">88</span><span class="u">个站</span></p>
           <p class="cmp-d">每个源都查过一遍代码在不在包里，不在的一个都不写进来。</p>
-          <div class="dual" role="img" aria-label="我们的配置 65 个站，每个都能用。">
+          <div class="dual" role="img" aria-label="我们的配置 88 个站，每个都能用。">
             <div class="dual-bar">
-              <span class="seg ok" style="--w:100%" data-w="100">65 个全部可用</span>
+              <span class="seg ok" style="--w:100%" data-w="100">88 个全部可用</span>
             </div>
             <div class="dual-scale">
               <span>0</span>
               <span>无必然失败项</span>
-              <span>65</span>
+              <span>88</span>
             </div>
           </div>
         </article>
@@ -1688,7 +1378,7 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
 
     <div class="legal">
       <p class="l1">本配置仅供学习交流，请勿商用</p>
-      <p class="l2">2026-10-07 03:13:21 · 65 SITES · 10 SOURCES</p>
+      <p class="l2">2026-10-07 15:54:22 · 88 SITES · 10 SOURCES</p>
     </div>
   </footer>
 
