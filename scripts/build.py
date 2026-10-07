@@ -1482,6 +1482,46 @@ def choose_home(kept_sites, candidates):
         "默认首页 = sites[0]，由 sources.json 的源顺序决定。")
 
 
+def prev_config_spider():
+    """上一版产物 config.json 里的 spider。
+
+    2026-10-07 加。起因：肥猫的源（肥猫.com/tv 等）全部挂掉后，旧的回退逻辑
+    把 spider 换成了"本次第一个抓到的源"——那天是王二小，而它那份 jar 里带
+    `assets/wexguard_v7.so` / `v8.so`（原生保护壳），实测会让一起看加载即崩。
+    配置每天构建两次，父母端随时可能踩到。
+
+    上游（Lightconer/tvbox-ysc-config）的做法是：每个源上次成功的产物留在
+    output/<id>.json，聚合时继续用 —— 所以肥猫源挂了，它单仓聚合里的 spider
+    依然还是肥猫。这里取它的最小版本：直接沿用上一版 config.json 的 spider。
+
+    注意：这不是"用缓存源的 spider"——那只 jar 只要还在（肥猫那份托管在
+    格隆汇 CDN 上），App 就能正常加载并解析 csp_ 站点，跟源站是否在线无关。
+    """
+    try:
+        with open(OUT_CONFIG, encoding="utf-8") as f:
+            value = str(json.load(f).get("spider") or "").strip()
+        return value or None
+    except Exception as e:
+        log(f"  （读上一版 config.json 的 spider 失败，忽略：{e}）")
+        return None
+
+
+def has_native_lib(data) -> bool:
+    """jar 里是否带 .so（原生库）。
+
+    带 .so 的 jar 基本都是"保护壳"（王二小系 wexguard、饭太硬系 ftyguard 等），
+    实测会在 App 加载时直接崩掉进程 —— 那是原生崩溃（SIGSEGV），Java 层的
+    try-catch 救不回来。所以这类 jar 绝不允许被写成 spider。
+    """
+    try:
+        import io as _io
+        import zipfile as _zip
+        with _zip.ZipFile(_io.BytesIO(data)) as z:
+            return any(n.lower().endswith(".so") for n in z.namelist())
+    except Exception:
+        return False
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="外部来源快照构建器")
     ap.add_argument("--demo", action="store_true",
@@ -1595,14 +1635,32 @@ def main() -> int:
     live_ids = [f[0] for f in fetched if not f[3]]
     spider_id = wanted_spider if wanted_spider in live_ids else (live_ids[0] if live_ids else None)
     spider_note = ""
-    if wanted_spider and spider_id != wanted_spider:
+
+    # ★ 2026-10-07 硬规则①：指定的 spider 源本次没抓到 → 沿用上一版 config.json 的 spider，不换源。
+    #   起因见 prev_config_spider()：换源那天换到了王二小那份带 .so 的 jar，App 加载即崩。
+    #   ⚠️ 只在【本次还有活源】时这么做：如果一个活源都没有（全走缓存），维持原行为
+    #      （不选 spider、不下载 jar、不做类存在性校验）—— 这是 tests/test_main_flow.py
+    #      里 test_cache_only_run_still_exits_zero 明确锁定的语义。
+    prev_spider = prev_config_spider()
+    keep_prev = (bool(prev_spider) and bool(live_ids)
+                 and (not wanted_spider or wanted_spider not in live_ids))
+    if keep_prev:
+        spider_id = None
+        spider_note = (f"指定的 {wanted_spider or '(未指定)'} 本次没抓到 → "
+                       f"沿用上一版 config.json 的 spider（不换源）")
+        log(f"  {spider_note}")
+    elif wanted_spider and spider_id != wanted_spider:
         spider_note = (f"指定的 {wanted_spider} 本次没抓到，"
                        f"回退到 {spider_id or '(无)'}；静态筛结果可能与预期不同")
 
     spider_classes, spider_url, spider_name = None, None, None
     spider_value = None          # 最终要写进 config.json 的那一份（可能已改成 https）
     scheme_note = ""             # scheme 改写的说明（优先级低于回退/读 jar 失败）
-    if spider_id:
+    if keep_prev:
+        # 沿用上一版：报告里把来源写清楚，方便一眼看出"这次没有换源"
+        spider_name = "上一版 config.json"
+        spider_value, scheme_note = https_equivalent(prev_spider)
+    elif spider_id:
         rec = next((f for f in fetched if f[0] == spider_id), None)
         if rec:
             spider_name = rec[1]
@@ -1616,17 +1674,34 @@ def main() -> int:
             elif scheme_note:
                 log(f"  spider 地址处理：{scheme_note}")
                 spider_note = scheme_note
-            spider_url = spider_url_of(spider_value)
-            if spider_url:
-                try:
-                    log(f"读取 spider 的类清单：{spider_url[:80]}…")
-                    spider_classes = jar_class_names(fetch_bytes(spider_url))
+
+    if spider_value:
+        spider_url = spider_url_of(spider_value)
+        if spider_url:
+            try:
+                log(f"读取 spider 的类清单：{spider_url[:80]}…")
+                jar_bytes = fetch_bytes(spider_url)
+                # ★ 2026-10-07 硬规则②：带 .so 的 jar（原生保护壳）绝不当 spider，实测加载即崩。
+                if has_native_lib(jar_bytes):
+                    log("  ✗ 这个 jar 里带 .so（原生保护壳），拒绝采用当 spider")
+                    if prev_spider and not keep_prev:
+                        spider_value, _ = https_equivalent(prev_spider)
+                        spider_url = spider_url_of(spider_value)
+                        spider_name = "上一版 config.json（候选 jar 含 .so，已拒绝）"
+                        spider_note = "候选 spider 的 jar 含 .so（会让 App 崩）→ 改用上一版 config.json 的 spider"
+                        jar_bytes = fetch_bytes(spider_url) if spider_url else b""
+                    else:
+                        spider_value, spider_url = None, None
+                        spider_note = "候选 spider 的 jar 含 .so（会让 App 崩）→ 本次不采用任何 spider"
+                        jar_bytes = b""
+                if jar_bytes:
+                    spider_classes = jar_class_names(jar_bytes)
                     log(f"  -> jar 里有 {len(spider_classes)} 个类")
-                except Exception as e:
-                    # jar 读不出来时【不能】让静态筛按空集跑：那会把所有 csp_ 站全判死。
-                    # 跳过静态筛是更保守的选择（少砍几个站），并在报告里写清楚。
-                    log(f"  -> 读 jar 失败：{e}（本次跳过类存在性校验）")
-                    spider_note = f"jar 读取失败，本次跳过类存在性校验：{e}"[:200]
+            except Exception as e:
+                # jar 读不出来时【不能】让静态筛按空集跑：那会把所有 csp_ 站全判死。
+                # 跳过静态筛是更保守的选择（少砍几个站），并在报告里写清楚。
+                log(f"  -> 读 jar 失败：{e}（本次跳过类存在性校验）")
+                spider_note = f"jar 读取失败，本次跳过类存在性校验：{e}"[:200]
 
     cohort = {}
     merged = merge(fetched, spider_classes, cfg, cohort)
@@ -1649,6 +1724,22 @@ def main() -> int:
     # 如果 url 本身带非 ascii（中文域名），写进配置前先转 punycode，否则那个地址没法用。
     if spider_value:
         merged["spider"] = sanitized_spider(spider_value)
+    else:
+        # 没有采用任何 spider 时，merge() 会把 fetched[0] 的 spider 留进产物 ——
+        # 那份同样可能是带 .so 的保护壳 jar（2026-10-07 就是王二小那份顶了上来）。
+        # 这里也验一遍，是 .so 就清掉：宁可顶层没有 spider（App 里各站自带的 jar 照常工作），
+        # 也不要把一个"加载即崩"的 jar 交给父母的设备。
+        # ⚠️ 同样只在【本次还有活源】时校验：全走缓存的那次运行不做任何网络请求。
+        base_spider = str(merged.get("spider") or "")
+        if base_spider and live_ids:
+            base_url = spider_url_of(base_spider)
+            try:
+                if base_url and has_native_lib(fetch_bytes(base_url)):
+                    log("  ✗ 产物里原有的 spider 也含 .so → 已清空，避免 App 加载即崩")
+                    merged["spider"] = ""
+                    spider_note = "产物原有 spider 含 .so（会让 App 崩）→ 已清空"
+            except Exception as e:
+                log(f"  （校验产物原有 spider 失败，保留原样：{e}）")
 
     # ★ 这里原来会调 update_failure_streak(cfg, cohort) 并把结果 save_filter(cfg) 写回
     #   filter.json（自动拉黑）。2026-10-03 整段删除：
