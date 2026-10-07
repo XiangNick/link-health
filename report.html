@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
 <meta name="description" content="链接巡检报告：本次巡检的结果、哪些没通过、为什么。">
-<title>链接巡检报告 · 2026-10-08 00:41:58</title>
+<title>链接巡检报告 · 2026-10-08 01:03:11</title>
 <style>
 /* ═══════════════════════════════════════════════════════════════
    一、令牌层 —— 沿用 App「冷调影院」设计系统，一个色值都不新造
@@ -743,22 +743,22 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
       <span class="sep" aria-hidden="true">/</span>
       <span>yingshi-build/1.0</span>
       <span class="sep" aria-hidden="true">/</span>
-      <span>第 17 份台账</span>
+      <span>第 18 份台账</span>
     </p>
 
     <h1 class="reveal" style="--i:1">链接巡检报告<span class="light"> · 每日裁剪台账</span></h1>
 
     <div class="stamp reveal" style="--i:2">
       <span class="stamp-k">构建时间</span>
-      <span class="stamp-v accent">2026-10-08 00:41:58</span>
+      <span class="stamp-v accent">2026-10-08 01:03:11</span>
       <span class="stamp-k">上游源</span>
       <span class="stamp-v">11 个</span>
       <span class="stamp-k">产出站点</span>
-      <span class="stamp-v">34 个</span>
+      <span class="stamp-v">65 个</span>
     </div>
 
     <p class="lede reveal" style="--i:3">
-      汇总进来 <strong>116 个源</strong>，剔掉 <strong>82 个跑不起来的</strong>，留下 <strong>34 个能用的</strong>。
+      汇总进来 <strong>145 个源</strong>，剔掉 <strong>80 个跑不起来的</strong>，留下 <strong>65 个能用的</strong>。
     </p>
   </header>
 
@@ -778,9 +778,9 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
           <h3 class="kpi-label">上游源</h3>
           <div class="kpi-body">
             <div class="tally">
-              <span class="t t-live"><span class="n">2</span><span class="u">活</span></span>
+              <span class="t t-live"><span class="n">3</span><span class="u">活</span></span>
               <span class="t t-cache"><span class="n">0</span><span class="u">缓存</span></span>
-              <span class="t t-down"><span class="n">9</span><span class="u">挂</span></span>
+              <span class="t t-down"><span class="n">8</span><span class="u">挂</span></span>
             </div>
             <p class="kpi-foot">共 <b>11</b> 个上游源。cache 是上次的缓存，不算今天抓到。</p>
           </div>
@@ -791,11 +791,11 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
           <h3 class="kpi-label">站点</h3>
           <div class="kpi-body">
             <div class="cutmath">
-              <span class="from">116</span>
+              <span class="from">145</span>
               <span class="arrow" aria-hidden="true">→</span>
-              <span class="to">34</span>
+              <span class="to">65</span>
             </div>
-            <p class="kpi-foot">剔掉 <b>82</b> 个（主因是"类不在选定的那个包里"），留下 <b>34</b> 个，每个都能跑。</p>
+            <p class="kpi-foot">剔掉 <b>80</b> 个（主因是"类不在选定的那个包里"），留下 <b>65</b> 个，每个都能跑。</p>
           </div>
         </article>
 
@@ -813,8 +813,8 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
           <h3 class="kpi-label">对比上次</h3>
           <div class="kpi-body">
             <ul class="delta">
-              <li><span class="dk">死源</span><span class="dv bad">+1</span></li>
-              <li><span class="dk">新增源</span><span class="dv good">1 个</span></li>
+              <li><span class="dk">死源</span><span class="dv bad">-1</span></li>
+              <li><span class="dk">新增源</span><span class="dv good">0 个</span></li>
               <li><span class="dk">消失源</span><span class="dv neu">0 个</span></li>
             </ul>
           </div>
@@ -827,9 +827,9 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
     <section id="why" aria-labelledby="why-h">
       <div class="sec-head reveal" style="--i:9">
         <span class="sec-num" aria-hidden="true">02</span>
-        <h2 id="why-h">为什么砍掉 <span class="light">这 82 个</span></h2>
+        <h2 id="why-h">为什么砍掉 <span class="light">这 80 个</span></h2>
       </div>
-      <p class="sec-sub">柱子的长度就是砍掉的数量。最长的这一条是 73 个。</p>
+      <p class="sec-sub">柱子的长度就是砍掉的数量。最长的这一条是 71 个。</p>
 
       <div class="pane reveal" style="--i:10">
         <div class="ledger">
@@ -846,15 +846,15 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
           <div class="bars" id="bars">
             <div class="bar" style="--i:0">
               <span class="bar-label"></span>
-              <span class="bar-track"><span class="bar-fill" data-w="73"></span></span>
-              <span class="bar-val">73</span>
+              <span class="bar-track"><span class="bar-fill" data-w="71"></span></span>
+              <span class="bar-val">71</span>
             </div>
           </div>
 
           <p class="bar-tail">
             <span>长尾</span>
             <span><b>零散家族 0 个</b> ，每个只砍掉 1 个</span>
-            <span>73</span>
+            <span>71</span>
           </p>
         </div>
 
@@ -872,7 +872,7 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
             这就是"越搜越慢、好多源永远搜不出东西"的来源。
           </p>
           <p style="margin-top:10px">
-            上游那份配置最大的毛病就在这：<strong>116 个源里有 82 个永远出不了结果</strong>，
+            上游那份配置最大的毛病就在这：<strong>145 个源里有 80 个永远出不了结果</strong>，
             却全都写在里面。我们不是修好了它 —— 我们只是<strong>把跑不起来的剔掉，让留下来的每个都能用</strong>。
           </p>
 
@@ -907,7 +907,7 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
 
       <div class="tbl-scroll reveal" style="--i:10">
         <table>
-          <caption>构建时刻的快照 · 2026-10-08 00:41:58</caption>
+          <caption>构建时刻的快照 · 2026-10-08 01:03:11</caption>
           <thead>
             <tr>
               <th scope="col">源</th>
@@ -920,12 +920,12 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
           <tbody>
             <!-- ★ $sources_table：完整 <tr class="src-row …"> 序列。
                  结构见文件顶部「渲染契约 · 片段结构规范」。 -->
-            <tr class="src-row is-down">
+            <tr class="src-row">
               <th scope="row" class="src-name">肥猫老站（自备·从 git 历史恢复） <span class="src-id">legacy</span></th>
-              <td><span class="src-status down"><span class="pip" aria-hidden="true"></span>down</span></td>
-              <td class="num">—</td>
-              <td class="url">—</td>
-              <td class="note">校验不通过：没有 spider 字段 · 校验不通过：没有 spider 字段</td>
+              <td><span class="src-status live"><span class="pip" aria-hidden="true"></span>live</span></td>
+              <td class="num">32</td>
+              <td class="url">https://raw.githubusercontent.com/XiangNick/link-health/main/config/legacy-feimao.json</td>
+              <td class="note">本次抓取成功</td>
             </tr>
             <tr class="src-row is-down">
               <th scope="row" class="src-name">肥猫 <span class="src-id">feimao</span></th>
@@ -1005,7 +1005,7 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
         <span class="co-tag">徽章口径</span>
         <p>
           上游把「用缓存」也算成功，所以它写「11/11 可用」。
-          今天真正抓到的只有 <strong>2 个</strong>，还有 0 个用的是旧缓存 —— 能用，但不新。
+          今天真正抓到的只有 <strong>3 个</strong>，还有 0 个用的是旧缓存 —— 能用，但不新。
         </p>
       </div>
     </section>
@@ -1024,9 +1024,9 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
         <section class="group reveal">
           <h3 style="margin:0">
             <button class="acc-btn" type="button" aria-expanded="false" aria-controls="g1">
-              <span class="acc-count">73</span>
+              <span class="acc-count">71</span>
               <span class="acc-titles">
-                <span class="acc-title">类不在包里（73）</span>
+                <span class="acc-title">类不在包里（71）</span>
                 <span class="acc-note">这一份只加载了一个程序包；这些站要用的类不在里面 —— 不剔掉，App 加载时就抛 ClassNotFoundException，每次搜索还白等超时</span>
               </span>
               <span class="acc-caret" aria-hidden="true"></span>
@@ -1074,14 +1074,14 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
               <!-- ★ $drop_g1_chart：组 1 的完整分布表（整段 HTML 由脚本给，
                    空串则整块不出现）。结构见文件顶部「渲染契约 · 片段结构规范」。 -->
               <div class="foldmore">
-                <h4>完整分布 · 合计 73 个</h4>
+                <h4>完整分布 · 合计 71 个</h4>
                 <div class="inner-scroll" style="margin-top:10px">
                   <table>
                     <caption class="sr">被砍站点的 api 家族完整计数</caption>
                     <thead><tr><th scope="col">api 家族</th><th scope="col" class="num">数量</th><th scope="col">判定</th></tr></thead>
                     <tbody>
-                              <tr><td class="a"></td><td class="num">73</td><td class="r">包里没有</td></tr>
-                      <tr class="total-row"><td class="k">合计</td><td class="num">73</td><td class="r">全部砍掉</td></tr>
+                              <tr><td class="a"></td><td class="num">71</td><td class="r">包里没有</td></tr>
+                      <tr class="total-row"><td class="k">合计</td><td class="num">71</td><td class="r">全部砍掉</td></tr>
                     </tbody>
                   </table>
                 </div>
@@ -1430,11 +1430,6 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
                   <span class="drop-reason">WexGZsportGuard 包里没有</span>
                 </li>
                 <li class="drop-item">
-                  <span class="drop-key">看球</span>
-                  <span class="drop-name">🌐88┃体育🌐</span>
-                  <span class="drop-reason">KanqiuGuard 包里没有</span>
-                </li>
-                <li class="drop-item">
                   <span class="drop-key">繁星</span>
                   <span class="drop-name">💥┃繁星┃App</span>
                   <span class="drop-reason">AppMao 包里没有</span>
@@ -1448,11 +1443,6 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
                   <span class="drop-key">萌米</span>
                   <span class="drop-name">👀┃萌米┃App</span>
                   <span class="drop-reason">AppMao 包里没有</span>
-                </li>
-                <li class="drop-item">
-                  <span class="drop-key">豆瓣</span>
-                  <span class="drop-name">🔥公众号：聚玩盒</span>
-                  <span class="drop-reason">DouDou 包里没有</span>
                 </li>
                 <li class="drop-item">
                   <span class="drop-key">賤賤</span>
@@ -1539,9 +1529,9 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
         <section class="group reveal">
           <h3 style="margin:0">
             <button class="acc-btn" type="button" aria-expanded="false" aria-controls="g3">
-              <span class="acc-count">0</span>
+              <span class="acc-count">3</span>
               <span class="acc-titles">
-                <span class="acc-title">同名重复（0）</span>
+                <span class="acc-title">同名重复（3）</span>
                 <span class="acc-note">上游遇到重名源会改名保留，同一个源出现了好几份</span>
               </span>
               <span class="acc-caret" aria-hidden="true"></span>
@@ -1556,7 +1546,21 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
               <ul class="drop-list">
                 <!-- ★ $dropped_duplicate：<li class="drop-item"> 序列（第二列是状态徽章）。
                      结构见文件顶部「渲染契约 · 片段结构规范」。 -->
-
+                <li class="drop-item">
+                  <span class="drop-key">看球</span>
+                  <span class="drop-name">🌐88┃体育🌐</span>
+                  <span class="drop-reason">只留 肥猫老站（自备·从 git 历史恢复） 的</span>
+                </li>
+                <li class="drop-item">
+                  <span class="drop-key">荐片</span>
+                  <span class="drop-name">🧲┃荐片┃磁力</span>
+                  <span class="drop-reason">只留 肥猫老站（自备·从 git 历史恢复） 的</span>
+                </li>
+                <li class="drop-item">
+                  <span class="drop-key">豆瓣</span>
+                  <span class="drop-name">🔥公众号：聚玩盒</span>
+                  <span class="drop-reason">只留 肥猫老站（自备·从 git 历史恢复） 的</span>
+                </li>
               </ul>
 
               <p class="pi-hint" style="margin-top:var(--sp-3); margin-bottom:0">
@@ -1564,20 +1568,20 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
               </p>
 
               <!-- 重复量对比条：斜纹＝上游含重复，白＝去重后 -->
-              <div class="dupbar" role="img" aria-label="上游单仓 116 个站（含 0 个改名重复），我们的 34 个站，没有重复。">
+              <div class="dupbar" role="img" aria-label="上游单仓 145 个站（含 3 个改名重复），我们的 65 个站，没有重复。">
                 <div class="dupbar-row">
                   <span class="dupbar-lab">上游单仓</span>
                   <span class="dupbar-track">
                     <span class="dupbar-fill up" style="--w:100%" data-w="100"></span>
                   </span>
-                  <span class="dupbar-val"><b>116</b> 个（含 0 个改名重复）</span>
+                  <span class="dupbar-val"><b>145</b> 个（含 3 个改名重复）</span>
                 </div>
                 <div class="dupbar-row">
                   <span class="dupbar-lab">我们的</span>
                   <span class="dupbar-track">
-                    <span class="dupbar-fill ours" style="--w:29.3%" data-w="29.3"></span>
+                    <span class="dupbar-fill ours" style="--w:44.8%" data-w="44.8"></span>
                   </span>
-                  <span class="dupbar-val"><b>34</b> 个（去重后）</span>
+                  <span class="dupbar-val"><b>65</b> 个（去重后）</span>
                 </div>
               </div>
             </div>
@@ -1597,33 +1601,33 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
       <div class="compare">
         <article class="cmp reveal" style="--i:10">
           <p class="cmp-k">上游单仓</p>
-          <p class="cmp-big"><span class="v">116</span><span class="u">个站</span></p>
-          <p class="cmp-d">其中 <b>82</b> 个站的代码不在包里，打开就失败，每个还要白等一次超时。</p>
-          <div class="dual" role="img" aria-label="上游单仓 116 个站：用不了 82 个，能用 34 个。">
+          <p class="cmp-big"><span class="v">145</span><span class="u">个站</span></p>
+          <p class="cmp-d">其中 <b>77</b> 个站的代码不在包里，打开就失败，每个还要白等一次超时。</p>
+          <div class="dual" role="img" aria-label="上游单仓 145 个站：用不了 77 个，能用 68 个。">
             <div class="dual-bar">
-              <span class="seg bad" style="--w:70.7%" data-w="70.7">82</span>
-              <span class="seg ok" style="--w:29.3%" data-w="29.3">34</span>
+              <span class="seg bad" style="--w:53.1%" data-w="53.1">77</span>
+              <span class="seg ok" style="--w:46.9%" data-w="46.9">68</span>
             </div>
             <div class="dual-scale">
               <span>0</span>
-              <span>用不了 82 · 能用 34</span>
-              <span>116</span>
+              <span>用不了 77 · 能用 68</span>
+              <span>145</span>
             </div>
           </div>
         </article>
 
         <article class="cmp ours reveal" style="--i:11">
           <p class="cmp-k">我们的</p>
-          <p class="cmp-big"><span class="v">34</span><span class="u">个站</span></p>
+          <p class="cmp-big"><span class="v">65</span><span class="u">个站</span></p>
           <p class="cmp-d">每个源都查过一遍代码在不在包里，不在的一个都不写进来。</p>
-          <div class="dual" role="img" aria-label="我们的配置 34 个站，每个都能用。">
+          <div class="dual" role="img" aria-label="我们的配置 65 个站，每个都能用。">
             <div class="dual-bar">
-              <span class="seg ok" style="--w:100%" data-w="100">34 个全部可用</span>
+              <span class="seg ok" style="--w:100%" data-w="100">65 个全部可用</span>
             </div>
             <div class="dual-scale">
               <span>0</span>
               <span>无必然失败项</span>
-              <span>34</span>
+              <span>65</span>
             </div>
           </div>
         </article>
@@ -1656,7 +1660,7 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
 
     <div class="legal">
       <p class="l1">本配置仅供学习交流，请勿商用</p>
-      <p class="l2">2026-10-08 00:41:58 · 34 SITES · 11 SOURCES</p>
+      <p class="l2">2026-10-08 01:03:11 · 65 SITES · 11 SOURCES</p>
     </div>
   </footer>
 
