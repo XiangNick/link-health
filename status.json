@@ -1,7 +1,7 @@
 {
-  "built_at": "2026-10-10 15:53:40",
+  "built_at": "2026-10-11 02:07:05",
   "generator": "yingshi-build/1.0",
-  "build_no": 25,
+  "build_no": 26,
   "spider": {
     "source_id": null,
     "source_name": "上一版 config.json",
@@ -145,7 +145,7 @@
         },
         {
           "url": "http://我不是.摸鱼儿.com",
-          "error": "http://我不是.摸鱼儿.com → JSONDecodeError: Expecting value: line 1 column 1 (char 0)；正文开头：<!-- 42004453717 --> <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"utf-8\"> <meta name=\"viewport\" conten"
+          "error": "http://我不是.摸鱼儿.com → JSONDecodeError: Expecting value: line 1 column 1 (char 0)；正文开头：<!-- 462706526850 --> <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"utf-8\"> <meta name=\"viewport\" conte"
         },
         {
           "url": "http://我不是.摸鱼儿.xyz",
@@ -185,11 +185,11 @@
       "errors": [
         {
           "url": "http://www.mpanso.com/小米/DEMO.json",
-          "error": "http://www.mpanso.com/小米/DEMO.json → HTTP 404 Not Found"
+          "error": "http://www.mpanso.com/小米/DEMO.json → URLError: <urlopen error timed out>"
         },
         {
           "url": "https://www.mpanso.com/%E5%B0%8F%E7%B1%B3/DEMO.json",
-          "error": "https://www.mpanso.com/%E5%B0%8F%E7%B1%B3/DEMO.json → HTTP 404 Not Found"
+          "error": "https://www.mpanso.com/%E5%B0%8F%E7%B1%B3/DEMO.json → URLError: <urlopen error timed out>"
         },
         {
           "url": "http://miqk.cc/小米/DEMO.json",
