@@ -1,13 +1,13 @@
 {
-  "built_at": "2026-10-15 14:42:37",
+  "built_at": "2026-10-16 01:56:00",
   "generator": "yingshi-build/1.0",
-  "build_no": 35,
+  "build_no": 36,
   "spider": {
-    "source_id": null,
-    "source_name": "上一版 config.json",
-    "url": "https://img2.gelonghui.com/library/46da6-aa33493f-1c1d-4f35-9990-0be4bdbf0c64.png",
-    "class_count": 512,
-    "note": "指定的 feimao 本次没抓到 → 沿用上一版 config.json 的 spider（不换源）"
+    "source_id": "feimao",
+    "source_name": "肥猫",
+    "url": "https://img2.tofaka.com/autoupload/f/eja2s/20261016/MmQe/0X0/PandaQ1016.png",
+    "class_count": 549,
+    "note": ""
   },
   "upstream_sources": [
     {
@@ -22,10 +22,10 @@
     {
       "id": "feimao",
       "name": "肥猫",
-      "ok": false,
+      "ok": true,
       "from_cache": false,
-      "used_url": null,
-      "site_count": 0,
+      "used_url": "http://肥猫.net/tv",
+      "site_count": 40,
       "errors": [
         {
           "url": "http://肥猫.com/",
@@ -34,18 +34,6 @@
         {
           "url": "http://肥猫.com/tv",
           "error": "http://肥猫.com/tv → JSONDecodeError: Expecting value: line 1 column 1 (char 0)；正文开头：<!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"utf-8\"> <meta name=\"viewport\" content=\"width=device-width, initia"
-        },
-        {
-          "url": "http://肥猫.net/tv",
-          "error": "http://肥猫.net/tv → HTTP 521 Connection Reset by Origin Server"
-        },
-        {
-          "url": "http://hello.肥猫.com/",
-          "error": "http://hello.肥猫.com/ → JSONDecodeError: Expecting value: line 1 column 1 (char 0)；正文开头：<!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"utf-8\"> <meta name=\"viewport\" content=\"width=device-width, initia"
-        },
-        {
-          "url": "https://6296.kstore.vip/facat.json",
-          "error": "https://6296.kstore.vip/facat.json → HTTP 401 "
         }
       ]
     },
@@ -145,7 +133,7 @@
         },
         {
           "url": "http://我不是.摸鱼儿.com",
-          "error": "http://我不是.摸鱼儿.com → JSONDecodeError: Expecting value: line 1 column 1 (char 0)；正文开头：<!-- 752949735089 --> <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"utf-8\"> <meta name=\"viewport\" conte"
+          "error": "http://我不是.摸鱼儿.com → JSONDecodeError: Expecting value: line 1 column 1 (char 0)；正文开头：<!-- 653545482684 --> <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"utf-8\"> <meta name=\"viewport\" conte"
         },
         {
           "url": "http://我不是.摸鱼儿.xyz",
@@ -240,8 +228,8 @@
     }
   ],
   "sites": {
-    "total_input": 145,
-    "kept": 65,
+    "total_input": 155,
+    "kept": 68,
     "dropped": {
       "missing_class": [
         {
@@ -744,6 +732,48 @@
       ],
       "by_rule": [
         {
+          "key": "米搜",
+          "name": "🌖┃米搜┃网盘",
+          "api": "csp_MiSou",
+          "reason": "filter_keys"
+        },
+        {
+          "key": "csp_PanSearch",
+          "name": "🚃┃盘搜┃网盘",
+          "api": "csp_PanSearch",
+          "reason": "filter_keys"
+        },
+        {
+          "key": "csp_少儿",
+          "name": "📚┃少儿┃教育",
+          "api": "csp_Bili",
+          "reason": "filter_keys"
+        },
+        {
+          "key": "csp_小学",
+          "name": "📚┃小学┃课堂",
+          "api": "csp_Bili",
+          "reason": "filter_keys"
+        },
+        {
+          "key": "csp_初中",
+          "name": "📚┃初中┃课堂",
+          "api": "csp_Bili",
+          "reason": "filter_keys"
+        },
+        {
+          "key": "csp_高中",
+          "name": "📚┃高中┃课堂",
+          "api": "csp_Bili",
+          "reason": "filter_keys"
+        },
+        {
+          "key": "push_agent",
+          "name": "QQ频道：肥猫宝贝",
+          "api": "csp_Push",
+          "reason": "filter_keys"
+        },
+        {
           "key": "少儿教育",
           "name": "📚少儿┃教育📚",
           "api": "csp_BiliGuard",
@@ -800,6 +830,246 @@
       ],
       "duplicate": [
         {
+          "key": "豆瓣",
+          "name": "🐼┃QQ频道：肥猫宝贝┃",
+          "api": "csp_Douban",
+          "reason": "duplicate",
+          "kept_from": "肥猫老站（自备·从 git 历史恢复）",
+          "dropped_from": "肥猫"
+        },
+        {
+          "key": "豆瓣预告",
+          "name": "🐼┃豆瓣┃预告",
+          "api": "csp_YGP",
+          "reason": "duplicate",
+          "kept_from": "肥猫老站（自备·从 git 历史恢复）",
+          "dropped_from": "肥猫"
+        },
+        {
+          "key": "config",
+          "name": "🐼┃配置┃中心",
+          "api": "csp_Config",
+          "reason": "duplicate",
+          "kept_from": "肥猫老站（自备·从 git 历史恢复）",
+          "dropped_from": "肥猫"
+        },
+        {
+          "key": "csp_FeiMaoUC",
+          "name": "⚡┃闪电┃优汐",
+          "api": "csp_Duopan",
+          "reason": "duplicate",
+          "kept_from": "肥猫老站（自备·从 git 历史恢复）",
+          "dropped_from": "肥猫"
+        },
+        {
+          "key": "潮流",
+          "name": "🏜┃潮流┃APP",
+          "api": "csp_AppRJ",
+          "reason": "duplicate",
+          "kept_from": "肥猫老站（自备·从 git 历史恢复）",
+          "dropped_from": "肥猫"
+        },
+        {
+          "key": "肥猫",
+          "name": "🐼┃肥猫┃APP",
+          "api": "csp_AppQi",
+          "reason": "duplicate",
+          "kept_from": "肥猫老站（自备·从 git 历史恢复）",
+          "dropped_from": "肥猫"
+        },
+        {
+          "key": "干饭",
+          "name": "🍚┃干饭┃APP",
+          "api": "csp_AppDrama2",
+          "reason": "duplicate",
+          "kept_from": "肥猫老站（自备·从 git 历史恢复）",
+          "dropped_from": "肥猫"
+        },
+        {
+          "key": "光盘",
+          "name": "📀┃光盘┃APP",
+          "api": "csp_AppQi",
+          "reason": "duplicate",
+          "kept_from": "肥猫老站（自备·从 git 历史恢复）",
+          "dropped_from": "肥猫"
+        },
+        {
+          "key": "行动",
+          "name": "😌┃行动┃APP",
+          "api": "csp_AppDrama2",
+          "reason": "duplicate",
+          "kept_from": "肥猫老站（自备·从 git 历史恢复）",
+          "dropped_from": "肥猫"
+        },
+        {
+          "key": "再来",
+          "name": "✌️┃再来┃APP",
+          "api": "csp_AppDrama2",
+          "reason": "duplicate",
+          "kept_from": "肥猫老站（自备·从 git 历史恢复）",
+          "dropped_from": "肥猫"
+        },
+        {
+          "key": "一碗",
+          "name": "🥣┃一碗┃APP",
+          "api": "csp_AppDrama2",
+          "reason": "duplicate",
+          "kept_from": "肥猫老站（自备·从 git 历史恢复）",
+          "dropped_from": "肥猫"
+        },
+        {
+          "key": "韩圈",
+          "name": "⭕┃韩圈 ┃APP",
+          "api": "csp_Hxq",
+          "reason": "duplicate",
+          "kept_from": "肥猫老站（自备·从 git 历史恢复）",
+          "dropped_from": "肥猫"
+        },
+        {
+          "key": "蔬菜",
+          "name": "🫛┃蔬菜┃APP",
+          "api": "csp_AppGet",
+          "reason": "duplicate",
+          "kept_from": "肥猫老站（自备·从 git 历史恢复）",
+          "dropped_from": "肥猫"
+        },
+        {
+          "key": "csp_Jpys",
+          "name": "🥇️┃金牌┃影视",
+          "api": "csp_Jpys",
+          "reason": "duplicate",
+          "kept_from": "肥猫老站（自备·从 git 历史恢复）",
+          "dropped_from": "肥猫"
+        },
+        {
+          "key": "csp_Wwys",
+          "name": "🌾️┃农民┃影视",
+          "api": "csp_Wwys",
+          "reason": "duplicate",
+          "kept_from": "肥猫老站（自备·从 git 历史恢复）",
+          "dropped_from": "肥猫"
+        },
+        {
+          "key": "荐片",
+          "name": "🎬┃荐片┃影视",
+          "api": "csp_Jianpian",
+          "reason": "duplicate",
+          "kept_from": "肥猫老站（自备·从 git 历史恢复）",
+          "dropped_from": "肥猫"
+        },
+        {
+          "key": "csp_SaoHuo",
+          "name": "🔥┃火火┃影视",
+          "api": "csp_SaoHuo",
+          "reason": "duplicate",
+          "kept_from": "肥猫老站（自备·从 git 历史恢复）",
+          "dropped_from": "肥猫"
+        },
+        {
+          "key": "csp_Gz360",
+          "name": "🍉┃瓜子┃影视",
+          "api": "csp_Gz360",
+          "reason": "duplicate",
+          "kept_from": "肥猫老站（自备·从 git 历史恢复）",
+          "dropped_from": "肥猫"
+        },
+        {
+          "key": "厂长",
+          "name": "🏭┃厂长┃影视",
+          "api": "csp_Czsapp",
+          "reason": "duplicate",
+          "kept_from": "肥猫老站（自备·从 git 历史恢复）",
+          "dropped_from": "肥猫"
+        },
+        {
+          "key": "csp_SP360",
+          "name": "📺┃360┃官源",
+          "api": "csp_SP360",
+          "reason": "duplicate",
+          "kept_from": "肥猫老站（自备·从 git 历史恢复）",
+          "dropped_from": "肥猫"
+        },
+        {
+          "key": "csp_Bili",
+          "name": "🅱┃️哔哩┃合集",
+          "api": "csp_Bili",
+          "reason": "duplicate",
+          "kept_from": "肥猫老站（自备·从 git 历史恢复）",
+          "dropped_from": "肥猫"
+        },
+        {
+          "key": "csp_Dm84",
+          "name": "🤣┃动漫┃巴士",
+          "api": "csp_Dm84",
+          "reason": "duplicate",
+          "kept_from": "肥猫老站（自备·从 git 历史恢复）",
+          "dropped_from": "肥猫"
+        },
+        {
+          "key": "方舟",
+          "name": "🐷┃方舟┃动漫",
+          "api": "csp_AppGet",
+          "reason": "duplicate",
+          "kept_from": "肥猫老站（自备·从 git 历史恢复）",
+          "dropped_from": "肥猫"
+        },
+        {
+          "key": "番薯",
+          "name": "🍠┃番薯┃动漫",
+          "api": "csp_AppGet",
+          "reason": "duplicate",
+          "kept_from": "肥猫老站（自备·从 git 历史恢复）",
+          "dropped_from": "肥猫"
+        },
+        {
+          "key": "csp_FirstAid",
+          "name": "🚑┃急救┃教学",
+          "api": "csp_FirstAid",
+          "reason": "duplicate",
+          "kept_from": "肥猫老站（自备·从 git 历史恢复）",
+          "dropped_from": "肥猫"
+        },
+        {
+          "key": "酷狗",
+          "name": "🐾┃酷狗┃音乐",
+          "api": "csp_Kugou",
+          "reason": "duplicate",
+          "kept_from": "肥猫老站（自备·从 git 历史恢复）",
+          "dropped_from": "肥猫"
+        },
+        {
+          "key": "MTV",
+          "name": "🎧┃明星┃MV",
+          "api": "csp_Bili",
+          "reason": "duplicate",
+          "kept_from": "肥猫老站（自备·从 git 历史恢复）",
+          "dropped_from": "肥猫"
+        },
+        {
+          "key": "看球",
+          "name": "⚾┃看球┃直播",
+          "api": "csp_Kanqiu",
+          "reason": "duplicate",
+          "kept_from": "肥猫老站（自备·从 git 历史恢复）",
+          "dropped_from": "肥猫"
+        },
+        {
+          "key": "瓜子",
+          "name": "🏀┃瓜子┃体育",
+          "api": "csp_GuaziTY",
+          "reason": "duplicate",
+          "kept_from": "肥猫老站（自备·从 git 历史恢复）",
+          "dropped_from": "肥猫"
+        },
+        {
+          "key": "儿童",
+          "name": "📚┃儿童┃启蒙",
+          "api": "./api/drpy2.min.js",
+          "reason": "duplicate",
+          "kept_from": "肥猫老站（自备·从 git 历史恢复）",
+          "dropped_from": "肥猫"
+        },
+        {
           "key": "看球",
           "name": "🌐88┃体育🌐",
           "api": "csp_KanqiuGuard",
@@ -827,9 +1097,9 @@
     }
   },
   "counts": {
-    "live": 3,
+    "live": 4,
     "cache": 0,
-    "down": 8
+    "down": 7
   },
   "auto_blacklisted": []
 }
