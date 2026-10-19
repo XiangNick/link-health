@@ -1753,5 +1753,5 @@
     "vip.ffzyad.com",
     "http://itvba.xyz/tv/jar/fty1020.jar"
   ],
-  "warningText": "已校验固定 Spider 的哈希与入口类；未实测首页、搜索或播放。"
+  "warningText": "本配置由 4 个公开源聚合，已校验 Spider 哈希、类存在性并清洗规则；未实测首页、搜索或播放"
 }
