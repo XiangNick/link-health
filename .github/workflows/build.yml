@@ -50,6 +50,9 @@ jobs:
       # build.py 只用标准库，所以没有 pip install 这一步。
       # 上游要装 requests，我们不用 —— 少一个依赖少一份麻烦。
 
+      - name: 校验
+        run: python -m unittest discover -s tests
+
       - name: 更新快照
         id: build
         run: python scripts/build.py
@@ -131,7 +134,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "::notice::内容没有变化，跳过提交"
           else
-            git commit -m "chore: 更新快照 $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+            git commit -m "update"
 
             # ⚠️ 推送前必须先跟上远端。
             # 实测踩过（2026-10-03）：这轮跑的中途有人在 25 秒内又推了一个提交，

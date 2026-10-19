@@ -107,5 +107,6 @@
       ]
     }
   ],
-  "_legacy说明": "legacy 源 = 肥猫源挂掉前抓到的它自有站点（潮流/熊猫/一碗/金牌…共 32 个），从 git 历史恢复后固化成我们自己的文件；raw.githubusercontent 优先（构建机直连、最新），jsDelivr 兜底。"
+  "_legacy说明": "legacy 源 = 肥猫源挂掉前抓到的它自有站点（潮流/熊猫/一碗/金牌…共 32 个），从 git 历史恢复后固化成我们自己的文件；raw.githubusercontent 优先（构建机直连、最新），jsDelivr 兜底。",
+  "spider_pin": "https://img2.tofaka.com/autoupload/f/eja2s/20261016/MmQe/0X0/PandaQ1016.png;sha256;b169ae61cf618e7637b0687f91e594796546dc2903a6c921eed7404bdfa33007"
 }

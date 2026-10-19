@@ -12,6 +12,7 @@
 """
 
 import json
+import hashlib
 import os
 import re
 import sys
@@ -23,10 +24,12 @@ from tests import _helpers as H  # noqa: E402
 
 build = H.build
 
-JAR_URL_A = "http://cdn.a/jar.png"
-JAR_URL_B = "http://cdn.b/jar.png"
-SPIDER_A = JAR_URL_A + ";md5;aaa"
-SPIDER_B = JAR_URL_B
+JAR_BYTES = H.jar_of_classes(["AppRJ"])
+JAR_HASH = hashlib.sha256(JAR_BYTES).hexdigest()
+JAR_URL_A = "https://cdn.a/jar.png"
+JAR_URL_B = "https://cdn.b/jar.png"
+SPIDER_A = JAR_URL_A + ";sha256;" + JAR_HASH
+SPIDER_B = JAR_URL_B + ";sha256;" + JAR_HASH
 
 
 def doc(sites, spider=SPIDER_A, **extra):
@@ -81,7 +84,7 @@ class MainFlowTest(unittest.TestCase):
         code, log = self.run_main(
             self.two_sources(),
             self.texts(doc(py_sites(6, "a")), doc(py_sites(5, "b"), spider=SPIDER_B)),
-            jar=H.jar_of_classes(["AppRJ"]))
+            jar=JAR_BYTES)
         self.assertEqual(code, 0, log)
         cfg = self.sb.read_config()
         st = self.sb.read_status()
@@ -97,7 +100,7 @@ class MainFlowTest(unittest.TestCase):
     def test_report_has_no_leftover_placeholder(self):
         self.run_main(self.two_sources(),
                       self.texts(doc(py_sites(6, "a")), doc(py_sites(5, "b"), spider=SPIDER_B)),
-                      jar=H.jar_of_classes(["AppRJ"]))
+                      jar=JAR_BYTES)
         html = self.sb.read_report()
         scan = re.sub(r"<!--.*?-->", "", html, flags=re.S)
         self.assertEqual(re.findall(r"\$([A-Za-z_][A-Za-z0-9_]*)", scan), [])
@@ -108,16 +111,14 @@ class MainFlowTest(unittest.TestCase):
         config.json 里的 spider 必须是 A 的 —— 否则 App 加载的 jar 和
         我们做类校验用的 jar 不是同一个，一批站装上去就是打不开。
 
-        注意断言的是"清洗后"的值：夹具里写的是 ";md5;aaa" 这种【无效占位 hash】
-        （不是 32 位十六进制），写进配置前会被 sanitized_spider 去掉 ——
-        留着它只会让人误以为这个 jar 是有校验的。真实的 32 位 md5 会被保留。"""
+        发布的声明必须与实际校验的字节一致。"""
         code, log = self.run_main(
             self.two_sources(spider_source="A"),
             self.texts(doc(py_sites(6, "a"), spider=SPIDER_A),
                        doc(py_sites(5, "b"), spider=SPIDER_B)),
-            jar=H.jar_of_classes(["AppRJ"]))
+            jar=JAR_BYTES)
         self.assertEqual(code, 0, log)
-        self.assertEqual(self.sb.read_config()["spider"], JAR_URL_A)
+        self.assertEqual(self.sb.read_config()["spider"], SPIDER_A)
         self.assertEqual(self.sb.read_status()["spider"]["source_id"], "A")
         self.assertEqual(self.net.byte_calls, [JAR_URL_A])
         self.assertEqual(self.net.text_calls[0], "http://a/1.json")
@@ -127,13 +128,13 @@ class MainFlowTest(unittest.TestCase):
             self.two_sources(spider_source="A"),
             self.texts(RuntimeError("http://a/1.json → URLError: 域名解析不了"),
                        doc(py_sites(5, "b"), spider=SPIDER_B)),
-            jar=H.jar_of_classes(["AppRJ"]))
+            jar=JAR_BYTES)
         self.assertEqual(code, 0, log)
         st = self.sb.read_status()
         self.assertEqual(st["spider"]["source_id"], "B")
         self.assertIn("本次没抓到", st["spider"]["note"])
         self.assertIn("回退到 B", st["spider"]["note"])
-        self.assertEqual(self.sb.read_config()["spider"], JAR_URL_B)
+        self.assertEqual(self.sb.read_config()["spider"], SPIDER_B)
 
     def test_cache_source_cannot_provide_spider(self):
         """缓存源不能当 spider 源：缓存里的 spider 可能指向一个早就下线的 jar，
@@ -145,7 +146,7 @@ class MainFlowTest(unittest.TestCase):
         code, log = self.run_main(
             self.two_sources(spider_source="A"),
             self.texts(RuntimeError("网络挂了"), doc(py_sites(5, "b"), spider=SPIDER_B)),
-            jar=H.jar_of_classes(["AppRJ"]),
+            jar=JAR_BYTES,
             args=("--cache-dir", cache_dir))
         self.assertEqual(code, 0, log)
         st = self.sb.read_status()
@@ -156,7 +157,7 @@ class MainFlowTest(unittest.TestCase):
         self.assertEqual(self.sb.read_config()["spider"], SPIDER_B)
         self.assertEqual(st["counts"], {"live": 1, "cache": 1, "down": 0})
 
-    def test_cache_only_run_still_exits_zero(self):
+    def test_unverified_cache_only_run_preserves_artifacts(self):
         cache_dir = os.path.join(self.sb.root, "cache2")
         os.makedirs(cache_dir)
         with open(os.path.join(cache_dir, "A.json"), "w", encoding="utf-8") as f:
@@ -164,14 +165,12 @@ class MainFlowTest(unittest.TestCase):
         code, log = self.run_main(
             self.two_sources(spider_source="A"),
             self.texts(RuntimeError("挂"), RuntimeError("挂")),
-            jar=H.jar_of_classes(["AppRJ"]),
+            jar=JAR_BYTES,
             args=("--cache-dir", cache_dir))
-        self.assertEqual(code, 0, log)
-        st = self.sb.read_status()
-        self.assertEqual(st["counts"], {"live": 0, "cache": 1, "down": 1})
-        # 没有一个活着的源 → 不选 spider，也不做类存在性校验（保守：少砍几个站）
-        self.assertIsNone(st["spider"]["source_id"])
-        self.assertIsNone(st["spider"]["class_count"])
+        self.assertEqual(code, 1, log)
+        self.assertFalse(self.sb.exists(self.sb.config))
+        self.assertFalse(self.sb.exists(self.sb.status))
+        self.assertFalse(self.sb.exists(self.sb.report))
         self.assertEqual(self.net.byte_calls, [])
 
     def test_successful_result_is_written_back_to_cache_dir(self):
@@ -179,7 +178,7 @@ class MainFlowTest(unittest.TestCase):
         cache_dir = os.path.join(self.sb.root, "cache3")
         self.run_main(self.two_sources(),
                       self.texts(doc(py_sites(6, "a")), doc(py_sites(5, "b"), spider=SPIDER_B)),
-                      jar=H.jar_of_classes(["AppRJ"]),
+                      jar=JAR_BYTES,
                       args=("--cache-dir", cache_dir))
         with open(os.path.join(cache_dir, "A.json"), encoding="utf-8") as f:
             saved = json.load(f)
@@ -194,7 +193,7 @@ class MainFlowTest(unittest.TestCase):
             sources,
             {"http://a/1.json": '{"sites": [], "spider": "u"}',
              "http://a/2.json": doc(py_sites(6, "a"))},
-            jar=H.jar_of_classes(["AppRJ"]))
+            jar=JAR_BYTES)
         self.assertEqual(code, 0, log)
         st = self.sb.read_status()
         self.assertEqual(st["upstream_sources"][0]["used_url"], "http://a/2.json")
@@ -214,7 +213,7 @@ class MainFlowTest(unittest.TestCase):
              "http://a/2.json": RuntimeError("二号地址 404"),
              "http://a/3.json": '{"sites": [], "spider": "u"}',
              "http://b/1.json": doc(py_sites(5, "b"), spider=SPIDER_B)},
-            jar=H.jar_of_classes(["AppRJ"]))
+            jar=JAR_BYTES)
         self.assertEqual(code, 0, log)
         st = self.sb.read_status()
         a_entry = [s for s in st["upstream_sources"] if s["id"] == "A"][0]
@@ -260,7 +259,7 @@ class MainFlowTest(unittest.TestCase):
             self.texts(doc(py_sites(6, "a") + [{"key": "名人", "name": "接口失效",
                                                 "api": "py_x"}]),
                        doc(py_sites(5, "b"), spider=SPIDER_B)),
-            jar=H.jar_of_classes(["AppRJ"]), filter_doc=filt)
+            jar=JAR_BYTES, filter_doc=filt)
         self.assertEqual(code, 0, log)
         dropped = self.sb.read_status()["sites"]["dropped"]["by_rule"]
         reasons = sorted((d["reason"], d["key"]) for d in dropped)
@@ -277,7 +276,7 @@ class MainFlowTest(unittest.TestCase):
                            py_sites(6, "a")),
                        doc([{"key": "push_agent", "name": "推送(乙)", "api": "py_b"}] +
                            py_sites(5, "b"), spider=SPIDER_B)),
-            jar=H.jar_of_classes(["AppRJ"]))
+            jar=JAR_BYTES)
         self.assertEqual(code, 0, log)
         kept = [s for s in self.sb.read_config()["sites"] if s["key"] == "push_agent"]
         self.assertEqual(len(kept), 1)
@@ -292,7 +291,7 @@ class MainFlowTest(unittest.TestCase):
             self.texts(doc(py_sites(6, "a"), ads=[{"name": "甲广告", "url": "http://a/1"}]),
                        doc(py_sites(5, "b"), spider=SPIDER_B,
                            ads=[{"name": "乙广告", "url": "http://b/1"}])),
-            jar=H.jar_of_classes(["AppRJ"]))
+            jar=JAR_BYTES)
         self.assertEqual(code, 0, log)
         self.assertEqual([a["name"] for a in self.sb.read_config()["ads"]],
                          ["甲广告", "乙广告"])
@@ -301,7 +300,7 @@ class MainFlowTest(unittest.TestCase):
         code, log = self.run_main(
             self.two_sources(),
             self.texts(doc(py_sites(6, "a")), doc(py_sites(5, "b"), spider=SPIDER_B)),
-            jar=H.jar_of_classes(["AppRJ"]),
+            jar=JAR_BYTES,
             filter_doc=dict(build.FILTER_DEFAULTS, only_sources=["B"]))
         self.assertEqual(code, 0, log)
         st = self.sb.read_status()
@@ -314,7 +313,7 @@ class MainFlowTest(unittest.TestCase):
             self.two_sources(),
             self.texts(doc(py_sites(6, "a") + [{"key": "坏站", "api": "csp_没有的类"}]),
                        doc(py_sites(5, "b"), spider=SPIDER_B)),
-            jar=H.jar_of_classes(["AppRJ"]))
+            jar=JAR_BYTES)
         self.assertEqual(code, 0, log)
         st = self.sb.read_status()
         dropped = st["sites"]["dropped"]["missing_class"]
@@ -328,46 +327,38 @@ class MainFlowTest(unittest.TestCase):
             self.two_sources(),
             self.texts(doc(py_sites(6, "a") + [{"key": "好站", "api": "csp_AppRJ$1"}]),
                        doc(py_sites(5, "b"), spider=SPIDER_B)),
-            jar=H.jar_of_classes(["AppRJ"]))
+            jar=JAR_BYTES)
         self.assertEqual(code, 0, log)
         self.assertIn("好站", [s["key"] for s in self.sb.read_config()["sites"]])
 
     # ── 6. jar 读不出来时的降级 ──
-    def test_unreadable_jar_skips_class_filtering(self):
-        """jar 读不出来时【不能】按空集跑静态筛：那会把所有 csp_ 站全判死。
-        跳过校验是更保守的选择（少砍几个站），并在报告里写清楚。"""
+    def test_unreadable_jar_blocks_publication(self):
+        """jar 读取失败时不覆盖上次配置，也不生成新的通过报告。"""
         code, log = self.run_main(
             self.two_sources(),
             self.texts(doc(py_sites(6, "a") + [{"key": "csp站", "api": "csp_随便什么类"}]),
                        doc(py_sites(5, "b"), spider=SPIDER_B)),
             jar=b"\x89PNG\r\n\x1a\n this is not a zip")
-        self.assertEqual(code, 0, log)
-        st = self.sb.read_status()
-        self.assertIsNone(st["spider"]["class_count"])
-        self.assertIn("跳过类存在性校验", st["spider"]["note"])
-        self.assertEqual(st["sites"]["dropped"]["missing_class"], [])
-        self.assertIn("csp站", [s["key"] for s in self.sb.read_config()["sites"]])
-        self.assertIn("读 jar 失败", log)
+        self.assertEqual(code, 1, log)
+        self.assertFalse(self.sb.exists(self.sb.config))
+        self.assertFalse(self.sb.exists(self.sb.report))
 
-    def test_jar_without_any_class_name_also_skips_class_filtering(self):
-        """回归：dex 里一个类名都读不出来时，jar_class_names 现在会抛异常，
-        于是这里同样走"跳过校验"。如果它安静地返回空集合，
-        这个 csp_ 站就会被判死 —— 一份坏 dex 能把整份配置清空。"""
+    def test_empty_classes_block_publication(self):
+        """无效 dex 不能作为可发布的 Spider。"""
         code, log = self.run_main(
             self.two_sources(),
             self.texts(doc(py_sites(6, "a") + [{"key": "csp站", "api": "csp_随便什么类"}]),
                        doc(py_sites(5, "b"), spider=SPIDER_B)),
             jar=H.zip_jar(b"\x00" * 8))
-        self.assertEqual(code, 0, log)
-        st = self.sb.read_status()
-        self.assertIsNone(st["spider"]["class_count"])
-        self.assertIn("csp站", [s["key"] for s in self.sb.read_config()["sites"]])
+        self.assertEqual(code, 1, log)
+        self.assertFalse(self.sb.exists(self.sb.config))
+        self.assertFalse(self.sb.exists(self.sb.report))
 
     # ── 7. 台账编号 / --demo ──
     def test_build_no_increments_across_runs(self):
         args = (self.two_sources(),
                 self.texts(doc(py_sites(6, "a")), doc(py_sites(5, "b"), spider=SPIDER_B)))
-        jar = H.jar_of_classes(["AppRJ"])
+        jar = JAR_BYTES
         self.run_main(*args, jar=jar)
         first = self.sb.read_status()["build_no"]
         self.run_main(*args, jar=jar)
@@ -401,7 +392,7 @@ class MainFlowTest(unittest.TestCase):
         code, log = self.run_main(
             dict(self.two_sources(), home_candidates=["a3"]),
             self.texts(doc(py_sites(6, "a")), doc(py_sites(5, "b"), spider=SPIDER_B)),
-            jar=H.jar_of_classes(["AppRJ"]))
+            jar=JAR_BYTES)
         self.assertEqual(code, 0, log)
         cfg = self.sb.read_config()
         self.assertNotIn("home", cfg, "产物里不该再有 home 字段（App 不读它）")
@@ -481,7 +472,7 @@ class FilterJsonIsReadOnlyTest(unittest.TestCase):
         net = H.FakeNet(
             {"http://a/1.json": doc(py_sites(6, "a") + [{"key": "坏站", "api": "csp_没有的类"}]),
              "http://b/1.json": doc(py_sites(5, "b"), spider=SPIDER_B)},
-            H.jar_of_classes(["AppRJ"]))
+            JAR_BYTES)
         with mock.patch.object(build, "fetch_text", net.fetch_text), \
                 mock.patch.object(build, "fetch_bytes", net.fetch_bytes), \
                 H.argv(), H.capture_stdout():
@@ -509,7 +500,7 @@ class FilterJsonIsReadOnlyTest(unittest.TestCase):
             net = H.FakeNet(
                 {"http://a/1.json": doc(py_sites(6, "a") + dead),
                  "http://b/1.json": doc(py_sites(5, "b"), spider=SPIDER_B)},
-                H.jar_of_classes(["AppRJ"]))
+                JAR_BYTES)
             with mock.patch.object(build, "fetch_text", net.fetch_text), \
                     mock.patch.object(build, "fetch_bytes", net.fetch_bytes), \
                     H.argv(), H.capture_stdout():

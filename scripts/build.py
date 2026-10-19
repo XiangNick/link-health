@@ -353,6 +353,24 @@ def _digest_of(data, hash_type: str) -> str:
     return hashlib.md5(data).hexdigest()
 
 
+def verify_spider_bytes(value: str, data: bytes):
+    """发布前校验实际使用的同一份字节；声明错误时拒绝发布，不替换声明值。"""
+    url, decl = split_hash_decl(value)
+    kind, expected = declared_hash_of(value)
+    if not url.lower().startswith("https://"):
+        raise ValueError("Spider 必须使用 HTTPS")
+    if not kind or decl.lower() != ";" + kind + ";" + expected:
+        raise ValueError("Spider 缺少有效、完整的哈希声明")
+    if not data or _digest_of(data, kind) != expected:
+        raise ValueError("Spider 下载文件与声明哈希不一致")
+    if has_native_lib(data):
+        raise ValueError("Spider 包含不允许的原生库")
+    classes = jar_class_names(data)
+    if not classes:
+        raise ValueError("Spider 未解析到有效 CSP 类")
+    return classes
+
+
 def https_equivalent(spider_value: str):
     """把 http:// 的 jar 换成 https://，【仅当三重校验全过】。
 
@@ -994,12 +1012,11 @@ def build_fragments(ctx: dict) -> dict:
     v["cmp_a_ok_pct"] = f"{round(ok_a / before * 100, 1) if before else 0}"
     v["cmp_a_bad"] = str(bad)
     v["cmp_a_ok"] = str(ok_a)
-    v["cmp_a_desc"] = (f"其中 <b>{bad}</b> 个站的代码不在包里，打开就失败，"
-                       f"每个还要白等一次超时。")
-    v["cmp_b_desc"] = "每个源都查过一遍代码在不在包里，不在的一个都不写进来。"
-    v["cmp_a_aria"] = f"上游单仓 {before} 个站：用不了 {bad} 个，能用 {ok_a} 个。"
-    v["cmp_b_aria"] = f"我们的配置 {after} 个站，每个都能用。"
-    v["cmp_b_seg_label"] = f"{after} 个全部可用"
+    v["cmp_a_desc"] = (f"其中 <b>{bad}</b> 个按缺类或过滤规则排除；不代表逐站播放测试结果。")
+    v["cmp_b_desc"] = "按入口类和规则筛选保留；不代表首页、搜索或播放可用。"
+    v["cmp_a_aria"] = f"上游单仓 {before} 个站：规则排除 {bad} 个，其余 {ok_a} 个。"
+    v["cmp_b_aria"] = f"我们的配置保留 {after} 个站，未实测播放。"
+    v["cmp_b_seg_label"] = f"{after} 个静态保留"
 
     # ── KPI / 页脚 ──
     v["src_live"] = str(ctx["live"])
@@ -1015,6 +1032,7 @@ def build_fragments(ctx: dict) -> dict:
     v["spider_name"] = esc(ctx["spider_name"] or "（未选定）")
     v["spider_id"] = esc(ctx["spider_id"] or "—")
     v["spider_classes"] = str(ctx["spider_classes"] or "—")
+    v["spider_check"] = esc(ctx.get("spider_check", "示例数据；不代表实际检查或播放结果"))
     v["sources_heading"] = f"· {len(ctx['sources'])} 个来源"
     v["run_label"] = ctx["run_label"]
     v["delta_down"] = ctx["delta_down"]
@@ -1450,6 +1468,8 @@ def build_ctx_from_status(status, prev_status, dropped_all, duplicates):
         "spider_id": spider.get("source_id"),
         "spider_name": spider.get("source_name"),
         "spider_classes": spider.get("class_count"),
+        "spider_check": ("哈希已核对；仅静态检查，未实测首页、搜索或播放"
+                          if spider.get("hash_verified") else "历史记录缺少哈希校验证据；未实测首页、搜索或播放"),
         "kept": sites["kept"],
         "total_input": sites["total_input"],
         "dropped_all": dropped_all,
@@ -1559,6 +1579,7 @@ def main() -> int:
     only = set(cfg.get("only_sources") or [])
     sources = [s for s in src_cfg.get("sources", []) if not only or s.get("id") in only]
     wanted_spider = src_cfg.get("spider_source")
+    pinned_spider = str(src_cfg.get("spider_pin") or "").strip()
     prev_status = load_prev_status()
 
     log(f"源清单：{len(sources)} 个    spider 指定来自：{wanted_spider or '(未指定)'}")
@@ -1636,11 +1657,7 @@ def main() -> int:
     spider_id = wanted_spider if wanted_spider in live_ids else (live_ids[0] if live_ids else None)
     spider_note = ""
 
-    # ★ 2026-10-07 硬规则①：指定的 spider 源本次没抓到 → 沿用上一版 config.json 的 spider，不换源。
-    #   起因见 prev_config_spider()：换源那天换到了王二小那份带 .so 的 jar，App 加载即崩。
-    #   ⚠️ 只在【本次还有活源】时这么做：如果一个活源都没有（全走缓存），维持原行为
-    #      （不选 spider、不下载 jar、不做类存在性校验）—— 这是 tests/test_main_flow.py
-    #      里 test_cache_only_run_still_exits_zero 明确锁定的语义。
+    # 未配置固定包时，指定来源不可访问可沿用上一版引用；后续仍须重新校验。
     prev_spider = prev_config_spider()
     keep_prev = (bool(prev_spider) and bool(live_ids)
                  and (not wanted_spider or wanted_spider not in live_ids))
@@ -1656,7 +1673,13 @@ def main() -> int:
     spider_classes, spider_url, spider_name = None, None, None
     spider_value = None          # 最终要写进 config.json 的那一份（可能已改成 https）
     scheme_note = ""             # scheme 改写的说明（优先级低于回退/读 jar 失败）
-    if keep_prev:
+    if pinned_spider:
+        # 固定包优先于上游；上游恢复或更新都不能自动替换用户选定的包。
+        spider_id = "pinned"
+        spider_name = "固定版本"
+        spider_value = pinned_spider
+        spider_note = "固定已验证的 Spider；不会随上游自动换包"
+    elif keep_prev:
         # 沿用上一版：报告里把来源写清楚，方便一眼看出"这次没有换源"
         spider_name = "上一版 config.json"
         spider_value, scheme_note = https_equivalent(prev_spider)
@@ -1681,27 +1704,15 @@ def main() -> int:
             try:
                 log(f"读取 spider 的类清单：{spider_url[:80]}…")
                 jar_bytes = fetch_bytes(spider_url)
-                # ★ 2026-10-07 硬规则②：带 .so 的 jar（原生保护壳）绝不当 spider，实测加载即崩。
-                if has_native_lib(jar_bytes):
-                    log("  ✗ 这个 jar 里带 .so（原生保护壳），拒绝采用当 spider")
-                    if prev_spider and not keep_prev:
-                        spider_value, _ = https_equivalent(prev_spider)
-                        spider_url = spider_url_of(spider_value)
-                        spider_name = "上一版 config.json（候选 jar 含 .so，已拒绝）"
-                        spider_note = "候选 spider 的 jar 含 .so（会让 App 崩）→ 改用上一版 config.json 的 spider"
-                        jar_bytes = fetch_bytes(spider_url) if spider_url else b""
-                    else:
-                        spider_value, spider_url = None, None
-                        spider_note = "候选 spider 的 jar 含 .so（会让 App 崩）→ 本次不采用任何 spider"
-                        jar_bytes = b""
-                if jar_bytes:
-                    spider_classes = jar_class_names(jar_bytes)
-                    log(f"  -> jar 里有 {len(spider_classes)} 个类")
+                # 哈希、原生库和类清单使用同一次下载，避免校验后重新取到别的版本。
+                spider_classes = verify_spider_bytes(spider_value, jar_bytes)
+                log(f"  -> 哈希校验通过，jar 里有 {len(spider_classes)} 个类；未实测首页/搜索/播放")
             except Exception as e:
-                # jar 读不出来时【不能】让静态筛按空集跑：那会把所有 csp_ 站全判死。
-                # 跳过静态筛是更保守的选择（少砍几个站），并在报告里写清楚。
-                log(f"  -> 读 jar 失败：{e}（本次跳过类存在性校验）")
-                spider_note = f"jar 读取失败，本次跳过类存在性校验：{e}"[:200]
+                log(f"[FATAL] Spider 校验失败：{e}；保留上次 config/status/report，不发布本轮产物")
+                return 1
+    if not spider_classes:
+        log("[FATAL] 没有通过完整校验的 Spider；保留上次产物")
+        return 1
 
     cohort = {}
     merged = merge(fetched, spider_classes, cfg, cohort)
@@ -1713,33 +1724,8 @@ def main() -> int:
     dropped_all = cohort["dropped"]
     duplicates = [d for d in dropped_all if d.reason == "duplicate"]
 
-    # ⚠️ config.json 里的 spider 必须来自【真正被我们拿去读 jar 的那个源】(spider_id)。
-    # merge() 只会把 fetched[0]（也就是优先级最高、可能是缓存的那一家）的 spider 带进 base，
-    # 所以当 spider_id 发生回退（指定的源没抓到、或它只是个缓存源）时，
-    # App 加载的 jar 和我们做类校验用的 jar 就不是同一个 —— 校验过的类不在 App 的包里，
-    # 结果就是"配置看着没问题，装上去一半的站打不开"。这里显式改写成选定的那一份。
-    #
-    # 注意用的是上面已经过 scheme 校验的 spider_value（不是源里的原文）：
-    # App 只接受 https 的 jar，明文 http 会被 JarLoader 直接拒绝。
-    # 如果 url 本身带非 ascii（中文域名），写进配置前先转 punycode，否则那个地址没法用。
-    if spider_value:
-        merged["spider"] = sanitized_spider(spider_value)
-    else:
-        # 没有采用任何 spider 时，merge() 会把 fetched[0] 的 spider 留进产物 ——
-        # 那份同样可能是带 .so 的保护壳 jar（2026-10-07 就是王二小那份顶了上来）。
-        # 这里也验一遍，是 .so 就清掉：宁可顶层没有 spider（App 里各站自带的 jar 照常工作），
-        # 也不要把一个"加载即崩"的 jar 交给父母的设备。
-        # ⚠️ 同样只在【本次还有活源】时校验：全走缓存的那次运行不做任何网络请求。
-        base_spider = str(merged.get("spider") or "")
-        if base_spider and live_ids:
-            base_url = spider_url_of(base_spider)
-            try:
-                if base_url and has_native_lib(fetch_bytes(base_url)):
-                    log("  ✗ 产物里原有的 spider 也含 .so → 已清空，避免 App 加载即崩")
-                    merged["spider"] = ""
-                    spider_note = "产物原有 spider 含 .so（会让 App 崩）→ 已清空"
-            except Exception as e:
-                log(f"  （校验产物原有 spider 失败，保留原样：{e}）")
+    # 只发布上方实际下载并通过哈希/类校验的同一份 Spider 引用。
+    merged["spider"] = sanitized_spider(spider_value)
 
     # ★ 这里原来会调 update_failure_streak(cfg, cohort) 并把结果 save_filter(cfg) 写回
     #   filter.json（自动拉黑）。2026-10-03 整段删除：
@@ -1750,7 +1736,7 @@ def main() -> int:
 
     merged["warningText"] = (
         f"本配置由 {len([s for s in upstream_sources if s['ok']])} 个公开源聚合，"
-        f"已做类存在性校验与规则清洗；仅供学习交流，请勿商用"
+        f"已校验 Spider 哈希、类存在性并清洗规则；未实测首页、搜索或播放"
     )
 
     # ★ 不再往产物 config.json 里写 home 字段，也不再算它。
@@ -1781,6 +1767,8 @@ def main() -> int:
         "spider": {"source_id": spider_id, "source_name": spider_name,
                    "url": spider_url,
                    "class_count": len(spider_classes) if spider_classes else None,
+                   "hash_verified": True, "sha256": hashlib.sha256(jar_bytes).hexdigest(),
+                   "pinned": bool(pinned_spider), "playback_verified": False,
                    "note": spider_note},
         "upstream_sources": [
             {"id": s["id"], "name": s["name"], "ok": s["ok"], "from_cache": s["from_cache"],

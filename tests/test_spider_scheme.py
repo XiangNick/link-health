@@ -198,7 +198,7 @@ class SchemeRewriteInMainTest(unittest.TestCase):
         self.assertEqual(self.net.byte_calls.count(HTTPS_JAR), 2,
                          "https 应该被调用两次：一次探测 hash、一次读类清单")
 
-    def test_main_keeps_http_spider_when_https_hash_differs(self):
+    def test_main_rejects_spider_when_https_hash_differs(self):
         """https 给的内容和声明不一致 → 保持源里的 http，并说明原因。
 
         注意 http 那份必须是【能解析的好 jar】：否则会先在"读类清单"那一步失败，
@@ -211,14 +211,10 @@ class SchemeRewriteInMainTest(unittest.TestCase):
             sources,
             {"http://a/1.json": doc(py_sites(6, "a"), spider)},
             blobs={HTTPS_JAR: OTHER_BYTES, HTTP_JAR: JAR_BYTES})
-        self.assertEqual(code, 0, log)
-
-        cfg = self.sb.read_config()
-        self.assertTrue(cfg["spider"].startswith("http://"), cfg["spider"])
-        self.assertEqual(build.spider_url_of(cfg["spider"]), HTTP_JAR)
-        self.assertIn("不一致", self.sb.read_status()["spider"]["note"])
-        # 声明了但校验不过的 hash 不该留在配置里（留着只会让人以为"有校验"）
-        self.assertNotIn(";md5;", cfg["spider"])
+        self.assertEqual(code, 1, log)
+        self.assertFalse(self.sb.exists(self.sb.config))
+        self.assertFalse(self.sb.exists(self.sb.status))
+        self.assertFalse(self.sb.exists(self.sb.report))
 
 
 if __name__ == "__main__":

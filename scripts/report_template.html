@@ -1052,7 +1052,7 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
     </div>
 
     <p class="lede reveal" style="--i:3">
-      汇总进来 <strong>$site_before 个源</strong>，剔掉 <strong>$site_cut 个跑不起来的</strong>，留下 <strong>$site_after 个能用的</strong>。
+      汇总进来 <strong>$site_before 个源</strong>，剔掉 <strong>$site_cut 个不符合筛选条件的</strong>，留下 <strong>$site_after 个静态保留的</strong>。
     </p>
   </header>
 
@@ -1089,7 +1089,7 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
               <span class="arrow" aria-hidden="true">→</span>
               <span class="to">$site_after</span>
             </div>
-            <p class="kpi-foot">剔掉 <b>$site_cut</b> 个（主因是"类不在选定的那个包里"），留下 <b>$site_after</b> 个，每个都能跑。</p>
+            <p class="kpi-foot">剔掉 <b>$site_cut</b> 个（主因是"类不在选定的那个包里"），留下 <b>$site_after</b> 个；不代表逐站可播放。</p>
           </div>
         </article>
 
@@ -1098,7 +1098,7 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
           <h3 class="kpi-label">spider</h3>
           <div class="kpi-body">
             <div class="spider-name">$spider_name <code>$spider_id</code></div>
-            <p class="kpi-foot">这批源共用这一个程序包，里面 <b>$spider_classes</b> 个类。装进去的源只能跑得起"类就在这 <b>$spider_classes</b> 个里"的那些 —— 换一个包，被剔掉的名单就整个不一样。</p>
+            <p class="kpi-foot">当前包解析到 <b>$spider_classes</b> 个类。$spider_check。类存在不代表运行兼容或播放成功。</p>
           </div>
         </article>
 
@@ -1163,7 +1163,7 @@ $chart_bars
           </p>
           <p style="margin-top:10px">
             上游那份配置最大的毛病就在这：<strong>$site_before 个源里有 $site_cut 个永远出不了结果</strong>，
-            却全都写在里面。我们不是修好了它 —— 我们只是<strong>把跑不起来的剔掉，让留下来的每个都能用</strong>。
+            却全都写在里面。我们不是修好了它 —— 我们只是<strong>按静态条件筛选；保留不代表可用</strong>。
           </p>
 
           <div class="rc-chain">
@@ -1219,7 +1219,7 @@ $sources_table
         <span class="co-tag">徽章口径</span>
         <p>
           上游把「用缓存」也算成功，所以它写「$src_total/$src_total 可用」。
-          今天真正抓到的只有 <strong>$src_live_badge 个</strong>，还有 $src_cache 个用的是旧缓存 —— 能用，但不新。
+          今天真正抓到的只有 <strong>$src_live_badge 个</strong>，还有 $src_cache 个用的是旧缓存 —— 内容来自缓存，本轮未重新确认上游可访问。
         </p>
       </div>
     </section>
@@ -1368,7 +1368,7 @@ $dropped_duplicate
             </div>
             <div class="dual-scale">
               <span>0</span>
-              <span>用不了 $cmp_a_bad · 能用 $cmp_a_ok</span>
+              <span>规则排除 $cmp_a_bad · 其余 $cmp_a_ok</span>
               <span>$site_before</span>
             </div>
           </div>
@@ -1384,7 +1384,7 @@ $dropped_duplicate
             </div>
             <div class="dual-scale">
               <span>0</span>
-              <span>无必然失败项</span>
+              <span>仅静态筛选，未实测播放</span>
               <span>$site_after</span>
             </div>
           </div>
