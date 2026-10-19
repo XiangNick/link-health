@@ -743,7 +743,7 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
       <span class="sep" aria-hidden="true">/</span>
       <span>yingshi-build/1.0</span>
       <span class="sep" aria-hidden="true">/</span>
-      <span>第 42 份台账</span>
+      <span>固定包恢复检查</span>
     </p>
 
     <h1 class="reveal" style="--i:1">链接巡检报告<span class="light"> · 每日裁剪台账</span></h1>
@@ -758,7 +758,7 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
     </div>
 
     <p class="lede reveal" style="--i:3">
-      汇总进来 <strong>155 个源</strong>，剔掉 <strong>87 个跑不起来的</strong>，留下 <strong>68 个能用的</strong>。
+      汇总进来 <strong>155 个源</strong>，剔掉 <strong>87 个不符合筛选条件的</strong>，留下 <strong>68 个静态保留的</strong>。
     </p>
   </header>
 
@@ -795,7 +795,7 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
               <span class="arrow" aria-hidden="true">→</span>
               <span class="to">68</span>
             </div>
-            <p class="kpi-foot">剔掉 <b>87</b> 个（主因是"类不在选定的那个包里"），留下 <b>68</b> 个，每个都能跑。</p>
+            <p class="kpi-foot">剔掉 <b>87</b> 个（主因是"类不在选定的那个包里"），留下 <b>68</b> 个；不代表逐站可播放。</p>
           </div>
         </article>
 
@@ -803,8 +803,8 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
         <article class="kpi reveal" style="--i:7">
           <h3 class="kpi-label">spider</h3>
           <div class="kpi-body">
-            <div class="spider-name">肥猫 <code>feimao</code></div>
-            <p class="kpi-foot">这批源共用这一个程序包，里面 <b>558</b> 个类。装进去的源只能跑得起"类就在这 <b>558</b> 个里"的那些 —— 换一个包，被剔掉的名单就整个不一样。</p>
+            <div class="spider-name">固定版本 <code>pinned</code></div>
+            <p class="kpi-foot">当前包解析到 <b>549</b> 个类。哈希已核对；仅静态检查，未实测首页、搜索或播放。类存在不代表运行兼容或播放成功。</p>
           </div>
         </article>
 
@@ -813,9 +813,9 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
           <h3 class="kpi-label">对比上次</h3>
           <div class="kpi-body">
             <ul class="delta">
-              <li><span class="dk">死源</span><span class="dv bad">+0</span></li>
-              <li><span class="dk">新增源</span><span class="dv good">0 个</span></li>
-              <li><span class="dk">消失源</span><span class="dv neu">0 个</span></li>
+              <li><span class="dk">死源</span><span class="dv bad">—</span></li>
+              <li><span class="dk">新增源</span><span class="dv good">—</span></li>
+              <li><span class="dk">消失源</span><span class="dv neu">—</span></li>
             </ul>
           </div>
         </article>
@@ -873,7 +873,7 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
           </p>
           <p style="margin-top:10px">
             上游那份配置最大的毛病就在这：<strong>155 个源里有 87 个永远出不了结果</strong>，
-            却全都写在里面。我们不是修好了它 —— 我们只是<strong>把跑不起来的剔掉，让留下来的每个都能用</strong>。
+            却全都写在里面。我们不是修好了它 —— 我们只是<strong>按静态条件筛选；保留不代表可用</strong>。
           </p>
 
           <div class="rc-chain">
@@ -932,7 +932,7 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
               <td><span class="src-status live"><span class="pip" aria-hidden="true"></span>live</span></td>
               <td class="num">40</td>
               <td class="url">http://肥猫.net/tv</td>
-              <td class="note">本次 spider jar 的来源</td>
+              <td class="note">本次抓取成功</td>
             </tr>
             <tr class="src-row is-down">
               <th scope="row" class="src-name">饭太硬 <span class="src-id">fantaiying</span></th>
@@ -1005,7 +1005,7 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
         <span class="co-tag">徽章口径</span>
         <p>
           上游把「用缓存」也算成功，所以它写「11/11 可用」。
-          今天真正抓到的只有 <strong>4 个</strong>，还有 0 个用的是旧缓存 —— 能用，但不新。
+          今天真正抓到的只有 <strong>4 个</strong>，还有 0 个用的是旧缓存 —— 内容来自缓存，本轮未重新确认上游可访问。
         </p>
       </div>
     </section>
@@ -1787,15 +1787,15 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
         <article class="cmp reveal" style="--i:10">
           <p class="cmp-k">上游单仓</p>
           <p class="cmp-big"><span class="v">155</span><span class="u">个站</span></p>
-          <p class="cmp-d">其中 <b>54</b> 个站的代码不在包里，打开就失败，每个还要白等一次超时。</p>
-          <div class="dual" role="img" aria-label="上游单仓 155 个站：用不了 54 个，能用 101 个。">
+          <p class="cmp-d">其中 <b>54</b> 个按缺类或过滤规则排除；不代表逐站播放测试结果。</p>
+          <div class="dual" role="img" aria-label="上游单仓 155 个站：规则排除 54 个，其余 101 个。">
             <div class="dual-bar">
               <span class="seg bad" style="--w:34.8%" data-w="34.8">54</span>
               <span class="seg ok" style="--w:65.2%" data-w="65.2">101</span>
             </div>
             <div class="dual-scale">
               <span>0</span>
-              <span>用不了 54 · 能用 101</span>
+              <span>规则排除 54 · 其余 101</span>
               <span>155</span>
             </div>
           </div>
@@ -1804,14 +1804,14 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
         <article class="cmp ours reveal" style="--i:11">
           <p class="cmp-k">我们的</p>
           <p class="cmp-big"><span class="v">68</span><span class="u">个站</span></p>
-          <p class="cmp-d">每个源都查过一遍代码在不在包里，不在的一个都不写进来。</p>
-          <div class="dual" role="img" aria-label="我们的配置 68 个站，每个都能用。">
+          <p class="cmp-d">按入口类和规则筛选保留；不代表首页、搜索或播放可用。</p>
+          <div class="dual" role="img" aria-label="我们的配置保留 68 个站，未实测播放。">
             <div class="dual-bar">
-              <span class="seg ok" style="--w:100%" data-w="100">68 个全部可用</span>
+              <span class="seg ok" style="--w:100%" data-w="100">68 个静态保留</span>
             </div>
             <div class="dual-scale">
               <span>0</span>
-              <span>无必然失败项</span>
+              <span>仅静态筛选，未实测播放</span>
               <span>68</span>
             </div>
           </div>
@@ -1838,7 +1838,7 @@ footer{ margin-top:var(--sp-6); padding:var(--sp-5) 0 var(--sp-6); border-top:1p
       <div>
         <p class="foot-k">报告口径</p>
         <p class="foot-v">
-          状态是构建那一刻的快照：<code>live</code> 是今天抓到的，<code>cache</code> 用的是上次缓存。
+          状态是构建那一刻的快照：<code>live</code> 是今天抓到的，<code>cache</code> 用的是上次缓存。上游抓取时间沿用 2026-10-19 01:00:14。本次于 2026-10-19 09:42:26 恢复固定 Spider 并重新核对文件哈希和类清单；保留原有 68 个站点，未重新抓取上游或实测播放。
         </p>
       </div>
     </div>

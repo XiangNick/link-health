@@ -3,11 +3,16 @@
   "generator": "yingshi-build/1.0",
   "build_no": 42,
   "spider": {
-    "source_id": "feimao",
-    "source_name": "肥猫",
-    "url": "https://img2.tofaka.com/autoupload/f/eja2s/20261018/jgAC/0X0/PandaQ261018.png",
-    "class_count": 558,
-    "note": ""
+    "source_id": "pinned",
+    "source_name": "固定版本",
+    "url": "https://img2.tofaka.com/autoupload/f/eja2s/20261016/MmQe/0X0/PandaQ1016.png",
+    "class_count": 549,
+    "hash_verified": true,
+    "sha256": "b169ae61cf618e7637b0687f91e594796546dc2903a6c921eed7404bdfa33007",
+    "pinned": true,
+    "playback_verified": false,
+    "checked_at": "2026-10-19 09:42:26",
+    "note": "固定已验证的 Spider；不会随上游自动换包"
   },
   "upstream_sources": [
     {
@@ -1101,5 +1106,6 @@
     "cache": 0,
     "down": 7
   },
-  "auto_blacklisted": []
+  "auto_blacklisted": [],
+  "foot_scope": "上游抓取时间沿用 2026-10-19 01:00:14。本次于 2026-10-19 09:42:26 恢复固定 Spider 并重新核对文件哈希和类清单；保留原有 68 个站点，未重新抓取上游或实测播放。"
 }

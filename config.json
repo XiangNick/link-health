@@ -1,6 +1,6 @@
 {
   "_说明": "肥猫源挂掉前抓到的自有站点（从 git 历史恢复）",
-  "spider": "https://img2.tofaka.com/autoupload/f/eja2s/20261018/jgAC/0X0/PandaQ261018.png;md5;4edf6b3d3aa01efc371027324c8adbff",
+  "spider": "https://img2.tofaka.com/autoupload/f/eja2s/20261016/MmQe/0X0/PandaQ1016.png;sha256;b169ae61cf618e7637b0687f91e594796546dc2903a6c921eed7404bdfa33007",
   "sites": [
     {
       "key": "豆瓣",
@@ -1753,5 +1753,5 @@
     "vip.ffzyad.com",
     "http://itvba.xyz/tv/jar/fty1020.jar"
   ],
-  "warningText": "本配置由 4 个公开源聚合，已做类存在性校验与规则清洗；仅供学习交流，请勿商用"
+  "warningText": "已校验固定 Spider 的哈希与入口类；未实测首页、搜索或播放。"
 }
