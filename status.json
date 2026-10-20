@@ -1,7 +1,7 @@
 {
-  "built_at": "2026-10-20 14:51:08",
+  "built_at": "2026-10-21 02:11:03",
   "generator": "yingshi-build/1.0",
-  "build_no": 46,
+  "build_no": 47,
   "spider": {
     "source_id": "pinned",
     "source_name": "固定版本",
@@ -137,7 +137,7 @@
         },
         {
           "url": "http://我不是.摸鱼儿.com",
-          "error": "http://我不是.摸鱼儿.com → JSONDecodeError: Expecting value: line 1 column 1 (char 0)；正文开头：<!-- 792787376498 --> <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"utf-8\"> <meta name=\"viewport\" conte"
+          "error": "http://我不是.摸鱼儿.com → JSONDecodeError: Expecting value: line 1 column 1 (char 0)；正文开头：<!-- 463695213434 --> <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"utf-8\"> <meta name=\"viewport\" conte"
         },
         {
           "url": "http://我不是.摸鱼儿.xyz",
@@ -222,11 +222,11 @@
       "errors": [
         {
           "url": "https://9877.kstore.space/one.json",
-          "error": "https://9877.kstore.space/one.json → HTTP 404 "
+          "error": "https://9877.kstore.space/one.json → HTTP 502 Bad Gateway"
         },
         {
           "url": "https://9877.kstore.space/AnotherD/api.json",
-          "error": "https://9877.kstore.space/AnotherD/api.json → HTTP 404 "
+          "error": "https://9877.kstore.space/AnotherD/api.json → HTTP 502 Bad Gateway"
         }
       ]
     }
