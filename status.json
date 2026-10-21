@@ -1,7 +1,7 @@
 {
-  "built_at": "2026-10-21 14:46:37",
+  "built_at": "2026-10-22 02:18:23",
   "generator": "yingshi-build/1.0",
-  "build_no": 48,
+  "build_no": 49,
   "spider": {
     "source_id": "pinned",
     "source_name": "固定版本",
@@ -111,7 +111,7 @@
         },
         {
           "url": "https://欧歌.v.nxog.top/m/",
-          "error": "https://欧歌.v.nxog.top/m/ → URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismatch, certificate is not valid for 'xn--dkw0c.v.nxog.top'. (_ssl.c:1016)>"
+          "error": "https://欧歌.v.nxog.top/m/ → URLError: <urlopen error [SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure (_ssl.c:1016)>"
         },
         {
           "url": "http://欧歌zp8.v.nxog.top/m/",
@@ -119,7 +119,7 @@
         },
         {
           "url": "https://xn--zp8-mf3g9f.v.nxog.top/m/111.php?ou=%E5%85%AC%E4%BC%97%E5%8F%B7%E6%AC%A7%E6%AD%8Capp&mz=index&jar=index&123&b=%E6%AC%A7%E6%AD%8Czp8",
-          "error": "https://xn--zp8-mf3g9f.v.nxog.top/m/111.php?ou=%E5%85%AC%E4%BC%97%E5%8F%B7%E6%AC%A7%E6%AD%8Capp&mz=index&jar=index&123&b=%E6%AC%A7%E6%AD%8Czp8 → URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismatch, certificate is not valid for 'xn--zp8-mf3g9f.v.nxog"
+          "error": "https://xn--zp8-mf3g9f.v.nxog.top/m/111.php?ou=%E5%85%AC%E4%BC%97%E5%8F%B7%E6%AC%A7%E6%AD%8Capp&mz=index&jar=index&123&b=%E6%AC%A7%E6%AD%8Czp8 → URLError: <urlopen error [SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure (_ssl.c:1016)>"
         }
       ]
     },
@@ -137,7 +137,7 @@
         },
         {
           "url": "http://我不是.摸鱼儿.com",
-          "error": "http://我不是.摸鱼儿.com → JSONDecodeError: Expecting value: line 1 column 1 (char 0)；正文开头：<!-- 726773427415 --> <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"utf-8\"> <meta name=\"viewport\" conte"
+          "error": "http://我不是.摸鱼儿.com → JSONDecodeError: Expecting value: line 1 column 1 (char 0)；正文开头：<!-- 298055082045 --> <!DOCTYPE html> <html lang=\"en\"> <head> <meta charset=\"utf-8\"> <meta name=\"viewport\" conte"
         },
         {
           "url": "http://我不是.摸鱼儿.xyz",
